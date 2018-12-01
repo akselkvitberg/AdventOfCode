@@ -23,8 +23,7 @@ public static class MyExtensions
 
 public static class AdventOfCode 
 {
-    static string sessionCookie = "";
-
+    static string sessionCookie = File.ReadAllText(Path.Combine(Util.MyQueriesFolder, "cookie.txt"));
 
     public static async Task<string> GetInput()
     {
@@ -54,12 +53,9 @@ public static class AdventOfCode
             return text;
         }
     }
-    
-    public static bool Submit(string answer)
-    {
-        var directory = Path.GetDirectoryName(Util.CurrentQueryPath);
-        var day = int.Parse(directory.Substring(directory.Length - 2));
-        
-        return false;
-    }
+	
+	public static IEnumerable<string> SplitLines(this string input)
+	{
+		return input.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+	}
 }

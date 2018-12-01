@@ -6,17 +6,36 @@ async Task Main()
 {
     var input = await AdventOfCode.GetInput();
     var data = ProcessInput(input);
-    var result = Solve(data);
-    
-    AdventOfCode.Submit(result).Dump("Result");
+    var result1 = Solve1(data).Dump("1");
+	var result2 = Solve2(data).Dump("2");
 }
 
-private string Solve(object data)
+private int Solve1(IEnumerable<int> data)
 {
-    throw new NotImplementedException();
+    return data.Sum();
 }
 
-private object ProcessInput(string input)
+private int Solve2(IEnumerable<int> data)
 {
-    throw new NotImplementedException();
+	Queue<int> queue = new Queue<int>(data);
+	HashSet<int> set = new HashSet<int>();
+	
+	int count = 0;
+	while (true)
+	{
+		var i = queue.Dequeue();
+		queue.Enqueue(i);
+		count += i;
+		
+		if(set.Contains(count))
+		{
+			return count;
+		}
+		set.Add(count);
+	}
+}
+
+private IEnumerable<int> ProcessInput(string input)
+{
+	return input.SplitLines().Select(x => int.Parse(x));
 }
