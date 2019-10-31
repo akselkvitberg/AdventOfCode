@@ -22,6 +22,5 @@ private int Solve2(IEnumerable<int> data)
 
 private IEnumerable<int> ProcessInput(string input)
 {
-    input.Dump();
 	throw new NotImplementedException();
 }
