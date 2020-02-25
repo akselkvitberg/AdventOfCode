@@ -58,4 +58,9 @@ public static class AdventOfCode
 	{
 		return input.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
 	}
+
+    public static string[] Split(this string str, string separator)
+    {
+        return str.Split(new[] { separator }, StringSplitOptions.RemoveEmptyEntries);
+    }
 }

@@ -1,27 +1,23 @@
 <Query Kind="Program">
-  <Reference>&lt;RuntimeDirectory&gt;\System.Net.Http.dll</Reference>
-  <Namespace>System.Net.Http</Namespace>
   <Namespace>System.Threading.Tasks</Namespace>
-  <Namespace>System.Net.Http.Headers</Namespace>
+  <Namespace>System.Net.Http</Namespace>
   <Namespace>System.Net</Namespace>
 </Query>
 
 void Main()
 {
-	// Write code to test your extensions here. Press F5 to compile and run.
+    
 }
 
 public static class MyExtensions
 {
 	// Write custom extension methods here. They will be available to all queries.
-	public static void DoIt(){
-        
-    }
+	
 }
 
 // You can also define non-static classes, enums, etc.
 
-public static class AdventOfCode 
+public static class AdventOfCode
 {
     static string sessionCookie = File.ReadAllText(Path.Combine(Util.MyQueriesFolder, "cookie.txt"));
 
@@ -29,10 +25,10 @@ public static class AdventOfCode
     {
         var directory = Path.GetDirectoryName(Util.CurrentQueryPath);
         var day = int.Parse(directory.Substring(directory.Length - 2));
-        
+
         var path = Path.Combine(directory, "input.txt");
-        
-        if(File.Exists(path))
+
+        if (File.Exists(path))
         {
             return File.ReadAllText(path);
         }
@@ -53,9 +49,9 @@ public static class AdventOfCode
             return text;
         }
     }
-	
-	public static IEnumerable<string> SplitLines(this string input)
-	{
-		return input.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
-	}
+
+    public static IEnumerable<string> SplitLines(this string input)
+    {
+        return input.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+    }
 }

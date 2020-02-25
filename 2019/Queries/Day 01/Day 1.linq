@@ -10,17 +10,40 @@ async Task Main()
 	var result2 = Solve2(data).Dump("2");
 }
 
+int GetFuel(int x) => (int)(x / 3) - 2;
+int GetFuel2(int x) 
+{
+    var fuel = (int)(x / 3) - 2;
+    
+    if (fuel <= 0)
+        return 0;
+        
+    return GetFuel2(fuel) + fuel;
+}
+
 private int Solve1(IEnumerable<int> data)
 {
-	throw new NotImplementedException();
+    return data.Sum(GetFuel);
 }
 
 private int Solve2(IEnumerable<int> data)
 {
-	throw new NotImplementedException();
+    
+    // Initial fuel required
+    var fuel = data.Sum(GetFuel2);
+    
+    //List<int> modules = data.Select(GetFuel).Where(x=>x>0).ToList();
+    //
+    //while (modules.Count != 0)
+    //{
+    //    fuel += modules.Sum(GetFuel);
+    //    modules = modules.Select(GetFuel).Where(x=>x > 0).ToList();
+    //}
+    
+	return fuel;
 }
 
 private IEnumerable<int> ProcessInput(string input)
 {
-	throw new NotImplementedException();
+	return input.SplitLines().Select(int.Parse).ToList();
 }

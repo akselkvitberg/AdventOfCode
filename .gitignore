@@ -4,3 +4,5 @@
 *.exe
 *.exe.config
 cookie.txt
+*config.json
+*.dat
