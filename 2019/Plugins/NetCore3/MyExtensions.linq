@@ -54,4 +54,14 @@ public static class AdventOfCode
     {
         return input.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
     }
+    
+    public static IEnumerable<string> SplitComma(this string input)
+    {
+        return input.Split(new[] { ",", "," }, StringSplitOptions.RemoveEmptyEntries).Select(x=>x.Trim());
+    }
+    
+    public static IEnumerable<int> Parse(this IEnumerable<string> input)
+    {
+        return input.Select(int.Parse);
+    }
 }
