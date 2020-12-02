@@ -6,3 +6,6 @@
 cookie.txt
 *config.json
 *.dat
+__pycache__/
+.vscode/
+token
