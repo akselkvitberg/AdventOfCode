@@ -22,7 +22,7 @@ def GetInput(day):
     data = response.text
 
     inputFile = open(inputFilePath, mode="w")
-    data = inputFile.write(data)
+    inputFile.write(data)
     inputFile.close()
 
     return data
