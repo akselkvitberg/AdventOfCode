@@ -1,0 +1,13 @@
+#!fsharp
+
+let lines = File.ReadAllLines("input/1.txt");
+let items = lines |> Seq.map int
+
+#!fsharp
+
+let increases (a,b) = a < b
+items |> Seq.pairwise |> Seq.filter increases |> Seq.length
+
+#!fsharp
+
+items |> Seq.windowed 3 |> Seq.map Seq.sum |> Seq.pairwise |> Seq.filter increases |> Seq.length

@@ -1,0 +1,53 @@
+#!fsharp
+
+let lines = File.ReadAllText("input/4.txt").Split("\r\n\r\n");
+
+let numbers = lines[0].Split(",") |> Seq.map int
+
+let boardData = lines |> Seq.skip 1
+
+#!fsharp
+
+type Number = Number of int * bool
+type Board = Board of Number[,]
+
+#!fsharp
+
+//let splitString (line:string) (split:string) = line.Split(split, StringSplitOptions.RemoveEmptyEntries)
+
+let splitRows (board:string) = 
+    board.Split("\n", StringSplitOptions.RemoveEmptyEntries)
+
+let parseRows (row:string) =
+    row.Split(" ", StringSplitOptions.RemoveEmptyEntries)
+
+let parseNumbers input = Number(int input, false)
+
+let parseBoard boardString = 
+    boardString
+    |> splitRows
+    |> Seq.map parseRows
+    |> array2D
+    |> Array2D.map parseNumbers
+
+let boards = boardData |> Seq.map parseBoard |> Seq.map Board |> Seq.toArray
+
+#!fsharp
+
+let mark number (Board board) = 
+    Array2D.map (fun (Number (num, marked)) -> Number (num, marked || (num = number))) board
+    |> Board
+
+#!fsharp
+
+let check (Board board) = 
+    let check vector = 
+        Seq.forall (fun (Number (_, marked)) -> marked) vector
+    [|0..(Array2D.length1 board - 1)|]
+    |> Array.exists (fun i -> board[i,*] |> check)
+    ||
+    [|0..(Array2D.length2 board - 1)|]
+    |> Array.exists (fun j -> board.[*, j] |> check)
+
+let markedBoard = [38; 80; 23; 60; 82; 25] |> Seq.fold (fun acc num -> mark num acc) boards[0]
+check markedBoard
