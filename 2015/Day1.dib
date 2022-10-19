@@ -1,0 +1,20 @@
+#!fsharp
+
+let input = File.ReadAllText "Inputs/1.txt" |> Seq.toArray
+input[0..5]
+
+#!fsharp
+
+let direction c =
+    match c with
+    | '(' -> 1
+    | ')' -> -1
+    | _ -> 0
+
+#!fsharp
+
+input |> Seq.map direction |> Seq.sum
+
+#!fsharp
+
+input |> Seq.map direction |> Seq.scan (+) 0 |> Seq.findIndex (fun x -> x < 0)
