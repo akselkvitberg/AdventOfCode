@@ -1,0 +1,29 @@
+#!fsharp
+
+open System.Security.Cryptography
+
+let input = File.ReadAllText "Inputs/4.txt"
+
+#!fsharp
+
+let HashData input leadingZeros number =
+    let combined = $"{input}{number}"
+    let hash = combined 
+                |> Encoding.ASCII.GetBytes
+                |> MD5.HashData 
+                |> Seq.take 3
+                |> Seq.fold (fun state x -> state + System.String.Format("{0:X2}", x)) ""
+    hash[0..(leadingZeros-1)] = new string('0', leadingZeros)
+
+
+Seq.initInfinite (HashData input 5)
+|> Seq.indexed
+|> Seq.find (fun (i, r) -> r)
+|> fst
+
+#!fsharp
+
+Seq.initInfinite (HashData input 6)
+|> Seq.indexed
+|> Seq.find (fun (i, r) -> r)
+|> fst

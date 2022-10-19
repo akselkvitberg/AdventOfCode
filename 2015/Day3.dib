@@ -1,0 +1,43 @@
+#!fsharp
+
+let input = File.ReadAllText "Inputs/3.txt"
+
+type Position = {X:int; Y:int}
+
+#!fsharp
+
+let Parse c = 
+    match c with
+    | '>' -> {X = 1; Y = 0}
+    | '<' -> {X = -1; Y = 0}
+    | 'v' -> {X = 0; Y = 1}
+    | '^' -> {X = 0; Y = -1}
+
+let directions = input |> Seq.map Parse
+
+#!fsharp
+
+let Move santa position = 
+    { santa with
+        X = santa.X + position.X
+        Y = santa.Y + position.Y
+    }
+
+#!fsharp
+
+directions 
+|> Seq.scan Move {X=0; Y=0} 
+|> Seq.distinct
+|> Seq.length
+
+#!fsharp
+
+let Move2 (active, passive) position =
+    let newActive = Move active position
+    (passive, newActive)
+
+directions 
+|> Seq.scan Move2 ({X=0; Y=0}, {X=0; Y=0})
+|> Seq.collect (fun (a,b) -> [a;b])
+|> Seq.distinct
+|> Seq.length
