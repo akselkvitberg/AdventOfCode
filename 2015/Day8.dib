@@ -1,0 +1,26 @@
+#!fsharp
+
+let input = File.ReadAllLines "Inputs/8.txt"
+
+#!fsharp
+
+let getEncodedStringLength (input:string) =
+    System.Text.RegularExpressions.Regex.Unescape input[1..^1] |> String.length
+
+
+let codedLength = input |> Seq.sumBy String.length
+let unescapedLength = input |> Seq.sumBy getEncodedStringLength
+
+codedLength - unescapedLength
+
+#!fsharp
+
+open System.Text.RegularExpressions
+let escapeText (input:string) =
+    let escaped = Regex.Escape input
+    let escaped2 = escaped |> Seq.filter (fun c -> c = '\"') |> Seq.length
+    escaped.Length + escaped2 + 2
+
+let escapedLength = input |> Seq.sumBy escapeText
+
+escapedLength - codedLength
