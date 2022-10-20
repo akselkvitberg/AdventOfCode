@@ -8,7 +8,7 @@ let inputs = File.ReadAllLines "Inputs/6.txt"
 #!fsharp
 
 let Increase i = i + 1
-let Decrease i = i - 1
+let Decrease i = max 0 (i - 1)
 let Toggle i = i + 2
 
 let Apply (position:int*int) func grid = grid |> Map.change position (fun x -> 
@@ -50,9 +50,9 @@ operations |> Seq.fold apply map
 let GetOperations line =
     let func = Parse line
     let range = Range line
-    range |> Seq.map func
+    range |> Seq.map (fun pos -> Apply pos func)
 
 let operations = inputs |> Seq.collect GetOperations
 
-let map = Map.empty<(int*int), bool>
-operations |> Seq.fold apply map |> Map.filter (fun x y -> y) |> Map.count
+let map = Map.empty<(int*int), int>
+operations |> Seq.fold apply map |> Map.values |> Seq.sum
