@@ -1,0 +1,30 @@
+#!fsharp
+
+let input = "1113222113"
+
+#!fsharp
+
+let aggregate acc x =
+        match acc with 
+        | [] -> [(1,x)]
+        | (n, y)::tail when y = x -> (n+1, x)::tail
+        | _ -> (1,x)::acc
+
+let lookSay string =
+    string 
+    |> Seq.fold aggregate [] 
+    |> Seq.rev
+    |> Seq.collect (fun (count, char) -> $"{count}{char}")
+    |> Seq.toArray
+    |> String
+    
+
+[1..40]
+|> Seq.fold (fun str _ -> lookSay str) input
+|> Seq.length
+
+#!fsharp
+
+[1..50]
+|> Seq.fold (fun str _ -> lookSay str) input
+|> Seq.length
