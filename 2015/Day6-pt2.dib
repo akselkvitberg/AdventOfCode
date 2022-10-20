@@ -1,0 +1,58 @@
+#!fsharp
+
+open System.Text.RegularExpressions
+open System.IO
+
+let inputs = File.ReadAllLines "Inputs/6.txt"
+
+#!fsharp
+
+let Increase i = i + 1
+let Decrease i = i - 1
+let Toggle i = i + 2
+
+let Apply (position:int*int) func grid = grid |> Map.change position (fun x -> 
+    match x with
+    | Some v -> Some (func v)
+    | None -> Some (func 0)
+    )
+
+#!fsharp
+
+let Range (line:string) = 
+    let ints = [| for m in Regex.Matches(line, "(-?\d+)") -> int m.Value |]
+    let xs = [ints[0]..ints[2]]
+    let ys = [ints[1]..ints[3]]
+    xs |> Seq.allPairs ys
+Range "turn off 10,10 through 12,12"
+
+#!fsharp
+
+let Parse (line:string) = 
+    if line.StartsWith("toggle") then Toggle
+    elif line.StartsWith("turn on") then Increase
+    else Decrease
+
+#!fsharp
+
+let map = Map.empty<(int*int), int>
+let func = Parse "turn off"
+let range = Range "turn off 10,10, through 12,12"
+
+let operations = range |> Seq.map (fun pos -> Apply pos func)
+
+let apply map func = map |> func
+
+operations |> Seq.fold apply map
+
+#!fsharp
+
+let GetOperations line =
+    let func = Parse line
+    let range = Range line
+    range |> Seq.map func
+
+let operations = inputs |> Seq.collect GetOperations
+
+let map = Map.empty<(int*int), bool>
+operations |> Seq.fold apply map |> Map.filter (fun x y -> y) |> Map.count
