@@ -1,0 +1,104 @@
+#!fsharp
+
+let input = File.ReadAllLines "Inputs/7.txt"
+
+#!fsharp
+
+type Value =
+    | Connection of string
+    | Signal of int
+
+let parseValue v =
+    try 
+        int v |> Signal
+    with _ ->
+        Connection v
+
+type Operation = 
+    | SIGNAL of Value*string
+    | AND of Value*Value*string
+    | OR of Value*Value*string
+    | NOT of Value*string
+    | LSHIFT of Value*Value*string
+    | RSHIFT of Value*Value*string
+
+#!fsharp
+
+let ParseLong (segments:string[]) =
+    match segments[1] with
+    | "AND" -> AND(parseValue segments[0], parseValue segments[2], segments[4])
+    | "OR" -> OR(parseValue segments[0], parseValue segments[2], segments[4])
+    | "LSHIFT" -> LSHIFT(parseValue segments[0], parseValue segments[2], segments[4])
+    | "RSHIFT" -> RSHIFT(parseValue segments[0], parseValue segments[2], segments[4])
+
+let Parse (line:string) = 
+    let segments = line.Split(" ")
+    match segments.Length with
+    | 3 -> SIGNAL(parseValue segments[0], segments[2])
+    | 4 -> NOT (parseValue segments[1], segments[3])
+    | _ -> ParseLong segments
+
+Parse "x AND y -> z"
+
+#!fsharp
+
+let operations = input |> Seq.map Parse
+
+#!fsharp
+
+let And in1 in2 = in1 &&& in2
+let Or in1 in2 = in1 ||| in2
+let Not in1 = ~~~ in1
+let LeftShift in1 in2 = in1 <<< in2
+let RightShift in1 in2 = in1 >>> in2
+
+
+let ApplyOperation map operation = 
+    
+    let getSignalValue wire =
+        match wire with
+        | Signal i -> Some i
+        | Connection w -> Map.tryFind w map
+    
+    let apply1 out in1 op = 
+        match (getSignalValue in1) with
+        | Some v1 -> Map.add out (op v1) map
+        | _ -> map
+
+    let apply2 out in1 in2 op = 
+        match (getSignalValue in1, getSignalValue in2) with
+        | Some v1, Some v2 -> Map.add out (op v1 v2) map
+        | _ -> map
+
+
+
+    match operation with 
+        | SIGNAL (value, out)    -> apply1 out value id
+        | NOT (in1, out)         -> apply1 out in1 Not
+        | AND (in1, in2, out)    -> apply2 out in1 in2 And
+        | OR (in1, in2, out)     -> apply2 out in1 in2 Or
+        | LSHIFT (in1, in2, out) -> apply2 out in1 in2 LeftShift
+        | RSHIFT (in1, in2, out) -> apply2 out in1 in2 RightShift
+
+#!fsharp
+
+let rec RunOperations operations map = 
+    match Map.tryFind "a" map with
+    | Some value -> value
+    | _ -> operations |> Seq.fold ApplyOperation map |> RunOperations operations
+
+let a = RunOperations operations Map.empty
+a
+
+#!fsharp
+
+let op = SIGNAL(Signal(a), "b")
+
+let newOperations = 
+    operations 
+    |> Seq.map (fun item -> 
+        match item with 
+        | SIGNAL(_, "b") -> SIGNAL(Signal(a), "b")
+        | _ -> item)
+
+RunOperations newOperations Map.empty
