@@ -1,0 +1,52 @@
+#!fsharp
+
+let input = "hepxcrrq"
+
+#!fsharp
+
+let fromAscii (password:string) = password |> Seq.map (fun c -> (int c - int 'a')) |> Seq.toList
+let toAscii password = password |> Seq.map (fun c -> char(c + int 'a')) |> Seq.toArray |> String
+
+#!fsharp
+
+let rec increasePassword password = 
+    match password with
+    | c::tail -> 
+        let newC = (c + 1) % 26
+        if newC = 0 then
+            newC::(increasePassword tail)
+        else 
+            newC::tail
+
+"hepxxyzy" |> fromAscii |> List.rev |> increasePassword |> List.rev |> toAscii
+
+#!fsharp
+
+let checkPassword password =
+    let forbidden = "ilo" |> fromAscii |> Seq.cache |> Set
+    let hasForbiddenCharacters = forbidden |> Set.intersect (Set.ofList password) |> Set.count > 0
+    let hasIncreasingValues = password |> Seq.windowed 3 |> Seq.exists (fun a -> a = [|a[0]; a[0]-1; a[0]-2|])
+    let hasPairs = password |> Seq.pairwise |> Seq.filter (fun (a, b) -> a = b) |> Seq.distinct |> Seq.length > 1
+
+    not hasForbiddenCharacters && hasIncreasingValues && hasPairs
+
+"hepxxyzx" |> fromAscii |> List.rev |> checkPassword
+
+#!fsharp
+
+let rec Iterate password =
+    let nextPassword = password |> increasePassword
+    match checkPassword nextPassword with
+    | true -> nextPassword
+    | _ -> Iterate nextPassword
+    
+"hepxxyzz" |> fromAscii |> List.rev |> Iterate |> Seq.rev |> toAscii
+
+#!fsharp
+
+let nextPassword = input |> fromAscii |> List.rev |> Iterate |> Seq.rev |> toAscii
+nextPassword
+
+#!fsharp
+
+nextPassword |> fromAscii |> List.rev |> Iterate |> Seq.rev |> toAscii
