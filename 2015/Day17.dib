@@ -1,0 +1,36 @@
+#!fsharp
+
+let input = [33;14;18;20;45;35;16;35;1;13;18;13;50;44;48;6;24;41;30;42]
+
+#!fsharp
+
+let rec Combine (sizes:int list) =
+    seq {
+            match sizes with
+            | [] -> yield []
+            | [v] -> yield [v]
+            | (v::tail) ->
+                yield [v]
+                for r in Combine tail do
+                    yield v::r
+                    yield r
+        }
+
+let combinations = Combine input |> Seq.toList 
+combinations |> Seq.length
+
+#!fsharp
+
+combinations 
+|> Seq.map Seq.sum 
+|> Seq.filter (fun x -> x = 150)
+|> Seq.length
+
+#!fsharp
+
+combinations
+|> Seq.filter (fun x -> Seq.sum x = 150)
+|> Seq.countBy (fun x-> x.Length)
+|> Seq.sort
+|> Seq.head
+|> snd
