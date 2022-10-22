@@ -1,0 +1,66 @@
+#!fsharp
+
+let inputs = File.ReadAllLines "Inputs/18.txt"
+
+#!fsharp
+
+let grid = 
+    [| for row in inputs -> 
+        [| for col in row -> 
+            if col = '#' 
+                then true 
+                else false
+        |] 
+    |] |> array2D
+
+#!fsharp
+
+let GetNeighbours (grid:bool[,]) x y = 
+    grid[x-1..x+1,y-1..y+1]
+    |> Seq.cast<bool>
+    |> Seq.filter id
+    |> Seq.length
+
+
+let GetNextState (grid:bool[,]) x y state =
+    let neighbours = GetNeighbours grid x y
+    match (state, neighbours) with
+    | (true, 3) -> true
+    | (true, 4) -> true
+    | (false, 3) -> true
+    | (_, _) -> false
+
+let MoveNext (grid:bool[,]) = 
+    grid |> Array2D.mapi (GetNextState grid)
+
+grid 
+|> MoveNext
+|> MoveNext
+|> MoveNext
+|> MoveNext
+|> Seq.cast<bool>
+|> Seq.filter id
+|> Seq.length
+
+#!fsharp
+
+[1..100]
+|> Seq.fold (fun grid _ -> MoveNext grid) grid
+|> Seq.cast<bool>
+|> Seq.filter id
+|> Seq.length
+
+#!fsharp
+
+let fixLights (grid:bool[,]) =
+    grid[0,0] <- true
+    grid[0,99] <- true
+    grid[99,0] <- true
+    grid[99,99] <- true
+    grid
+
+[1..100]
+|> Seq.fold (fun grid _ -> MoveNext grid |> fixLights) (grid |> fixLights)
+|> Seq.cast<bool>
+|> Seq.filter id
+|> Seq.length
