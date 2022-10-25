@@ -1,0 +1,54 @@
+#!fsharp
+
+let input = File.ReadAllLines "Inputs/19.txt"
+
+#!fsharp
+
+let reps = input[..^2]
+let molecule = input[^0]
+
+#!fsharp
+
+let ParseReplacement (line:string) =
+    let [|source;_;replacement|] = line.Split(" ")
+    (source, replacement)
+
+let replacements = 
+    reps 
+    |> Seq.map ParseReplacement 
+    //|> Seq.map (fun (key, values) -> (key, Seq.map snd values)) // Why is there no Seq.groupBy fst snd, which is equivalent of Linq .GroupBy(x => x.Item1, x => x.Item2)
+replacements
+
+#!fsharp
+
+let ReplaceAtom molecule atom replacement =
+    molecule
+
+let Replace molecule replacementGroup =
+    0
+
+#!fsharp
+
+let Replace (line:string) (replacement:string) index length =
+    line[..index-1] + replacement + line[index + length..]
+
+let rec GetReplacements (line:string) (startIndex:int) ((source:string), replacement) = 
+    match line.IndexOf(source, startIndex) with
+    | -1 -> []
+    | index -> 
+        let modp = Replace line replacement index source.Length
+        let mods = GetReplacements line (index + 1) (source, replacement) 
+        modp::mods
+
+GetReplacements "ab ab ba ab ab" 0 ("ab", "x")
+
+#!fsharp
+
+replacements
+|> Seq.collect (GetReplacements molecule 0)
+|> Seq.distinct
+|> Seq.length
+
+#!fsharp
+
+// Todo: Day 2
