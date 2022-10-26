@@ -1,0 +1,61 @@
+#!fsharp
+
+let input = 33100000
+
+#!fsharp
+
+let CountPresents houseNr =
+    houseNr::[1..houseNr / 2]
+    |> Seq.filter (fun i -> houseNr % i = 0)
+    |> Seq.sumBy (fun i -> i * 10)
+
+CountPresents 1000
+
+#!fsharp
+
+Seq.initInfinite (fun i -> (i, CountPresents i))
+|> Seq.skip (input / 40)
+|> Seq.find (fun (i, presents) -> presents >= input / 1)
+
+#!fsharp
+
+[1..8000]
+|> Seq.sum
+|> printfn "%i" 
+
+printfn "%i" input
+
+#!fsharp
+
+Seq.initInfinite (fun i -> (i, CountPresents i))
+|> Seq.skip 100
+|> Seq.map (fun (i, p) -> (i, p, i % 2 = 0, i % 3 = 0, i % 5 = 0, i % 7 = 0))
+|> Seq.take 100
+
+#!fsharp
+
+Seq.initInfinite id
+|> Seq.skip 1
+|> Seq.filter (fun i -> i % 2 = 0)
+|> Seq.filter (fun i -> i % 3 = 0)
+|> Seq.filter (fun i -> i % 5 = 0)
+|> Seq.filter (fun i -> i % 7 = 0)
+|> Seq.filter (fun i -> i % 11 = 0)
+//|> Seq.filter (fun i -> i % 13 = 0) // too high
+|> Seq.map (fun i -> (i, CountPresents i))
+|> Seq.find (fun (i, presents ) -> presents >= input)
+
+#!markdown
+
+AAAAaaahhhh!!
+
+#!fsharp
+
+let CountPresentsLazyElves houseNr =
+    houseNr::[1..houseNr / 2]
+    |> Seq.filter (fun i -> houseNr % i = 0)
+    |> Seq.filter (fun i -> houseNr / i <= 50)
+    |> Seq.sumBy (fun i -> i * 10)
+
+//let test = 4000
+CountPresents test, CountPresentsLazyElves test
