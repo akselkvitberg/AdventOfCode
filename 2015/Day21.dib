@@ -1,0 +1,105 @@
+#!fsharp
+
+type Item = {Cost:int; Damage: int; Armor:int}
+type Player = {HP: int; Damage: int; Armor: int}
+
+#!fsharp
+
+let player = {HP = 100; Damage = 0; Armor = 0}
+let boss = {HP = 104; Damage = 8; Armor = 1}
+
+#!fsharp
+
+let Fight attacker defender =
+    let damage = max (attacker.Damage - defender.Armor) 1
+    {defender with HP = defender.HP - damage}
+
+let rec NextTurn player boss playerTurn = 
+    match (player.HP, boss.HP) with
+    | (a,_) when a <= 0 -> false
+    | (_, a) when a <= 0 -> true
+    | _ -> 
+        if playerTurn then
+            let boss' = Fight player boss
+            NextTurn player boss' false
+        else
+            let player' = Fight boss player
+            NextTurn player' boss true
+
+let IsWinnable boss player = NextTurn player boss true
+
+IsWinnable boss {HP = 100; Damage = 5; Armor = 2}
+
+#!fsharp
+
+let weapons = [
+    {Cost = 8 ; Damage = 4; Armor =0}
+    {Cost = 10; Damage = 5; Armor =0}
+    {Cost = 25; Damage = 6; Armor =0}
+    {Cost = 40; Damage = 7; Armor =0}
+    {Cost = 74; Damage = 8; Armor =0}
+]
+
+let armors = [
+    {Cost = 13; Damage = 0; Armor = 1}
+    {Cost = 31; Damage = 0; Armor = 2}
+    {Cost = 53; Damage = 0; Armor = 3}
+    {Cost = 75; Damage = 0; Armor = 4}
+    {Cost = 102; Damage = 0; Armor = 5}
+]
+
+let rings = [
+    {Cost = 25; Damage = 1; Armor = 0}
+    {Cost = 50; Damage = 2; Armor = 0}
+    {Cost = 100; Damage = 3; Armor = 0}
+    {Cost = 20; Damage = 0; Armor = 1}
+    {Cost = 40; Damage = 0; Armor = 2}
+    {Cost = 80; Damage = 0; Armor = 3}
+]
+
+#!fsharp
+
+let EquipmentSets =
+    seq {
+        for weapon in weapons do
+            yield [weapon]
+            for armor in armors do
+                yield [armor; weapon]
+                for ring in rings do
+                    yield [ring; armor; weapon]//[weapon; armor; ring]
+                    for ring2 in rings |> Seq.filter (fun x -> x <> ring) do
+                        yield [ring2; ring; armor; weapon]//[weapon; armor; ring; ring2]
+
+            for ring in rings do
+                yield [ring; weapon]
+                for ring2 in rings |> Seq.filter (fun x -> x <> ring) do
+                    yield [ring2; ring; weapon]//[weapon; ring; ring2]
+    } |> Seq.toList
+
+EquipmentSets |> Seq.map (fun e -> sprintf "%A" e)
+
+#!fsharp
+
+let CreatePlayer (equipment: Item list) =
+    {
+        HP = 100
+        Damage = equipment |> Seq.sumBy (fun f -> f.Damage)
+        Armor = equipment |> Seq.sumBy (fun f -> f.Armor)
+    }
+
+CreatePlayer EquipmentSets[1002]
+|> IsWinnable boss
+
+#!fsharp
+
+EquipmentSets 
+|> Seq.filter (CreatePlayer >> IsWinnable boss) 
+|> Seq.map (fun equipment -> equipment |> Seq.sumBy (fun y -> y.Cost)) 
+|> Seq.min
+
+#!fsharp
+
+EquipmentSets 
+|> Seq.filter (fun equipment -> not ((CreatePlayer >> IsWinnable boss) equipment))
+|> Seq.map (fun equipment -> equipment |> Seq.sumBy (fun y -> y.Cost))
+|> Seq.max
