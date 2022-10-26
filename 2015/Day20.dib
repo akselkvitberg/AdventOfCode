@@ -51,11 +51,32 @@ AAAAaaahhhh!!
 
 #!fsharp
 
+let count = 50
+let nr = 1000
+let i = 3
+i * count
+nr / i
+
+#!fsharp
+
 let CountPresentsLazyElves houseNr =
     houseNr::[1..houseNr / 2]
     |> Seq.filter (fun i -> houseNr % i = 0)
     |> Seq.filter (fun i -> houseNr / i <= 50)
-    |> Seq.sumBy (fun i -> i * 10)
+    |> Seq.sumBy (fun i -> i * 11)
 
-//let test = 4000
+let test = 786240
 CountPresents test, CountPresentsLazyElves test
+
+#!fsharp
+
+Seq.initInfinite id
+|> Seq.skip 1
+|> Seq.filter (fun i -> i % 2 = 0)
+|> Seq.filter (fun i -> i % 3 = 0)
+|> Seq.filter (fun i -> i % 5 = 0)
+|> Seq.filter (fun i -> i % 7 = 0)
+//|> Seq.filter (fun i -> i % 11 = 0)
+|> Seq.map (fun i -> (i, CountPresentsLazyElves i))
+|> Seq.take 100000
+|> Seq.find (fun (i, presents ) -> presents >= input)
