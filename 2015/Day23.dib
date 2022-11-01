@@ -1,0 +1,51 @@
+#!fsharp
+
+let input = File.ReadAllLines "Inputs/23.txt"
+
+#!fsharp
+
+type Instruction =
+    | Half of string
+    | Triple of string
+    | Increase of string
+    | Jump of int
+    | JumpIfEven of string*int
+    | JumpIfOne of string*int
+
+#!fsharp
+
+let Parse (line:string) =
+    let segments = line.Split([|' '; ','; '+'|], StringSplitOptions.RemoveEmptyEntries)
+    match segments with
+    | [|"hlf"; a|] -> Half a
+    | [|"tpl"; a |] -> Triple a
+    | [|"inc"; a |] -> Increase a
+    | [|"jmp"; a |] -> Jump (int a)
+    | [|"jie"; a; b|] -> JumpIfEven (a, (int b))
+    | [|"jio"; a; b|] -> JumpIfOne (a, (int b))
+
+let instructions = input |> Seq.map Parse |> Seq.toList
+
+#!fsharp
+
+let rec Cycle (memory:Map<string, int>) (instructions:Instruction list) PC =
+    if PC >= instructions.Length then memory
+    else
+        let instruction = instructions[PC]
+        match instruction with
+        | Half reg -> Cycle (Map.change reg (fun x -> Some ((x |> Option.defaultValue 0) / 2)) memory) instructions (PC + 1)
+        | Triple reg -> Cycle (Map.change reg (fun x -> Some ((x |> Option.defaultValue 0) * 3)) memory) instructions (PC + 1)
+        | Increase reg -> Cycle (Map.change reg (fun x -> Some ((x |> Option.defaultValue 0) + 1)) memory) instructions (PC + 1)
+        | Jump offset -> Cycle memory instructions (PC + offset)
+        | JumpIfEven (reg,offset) -> if (memory |> Map.tryFind reg |> Option.defaultValue 0) % 2 = 0 
+                                     then Cycle memory instructions (PC + offset)
+                                     else Cycle memory instructions (PC + 1)
+        | JumpIfOne (reg,offset) -> if (memory |> Map.tryFind reg |> Option.defaultValue 0) = 1
+                                    then Cycle memory instructions (PC + offset)
+                                    else Cycle memory instructions (PC + 1)
+
+Cycle Map.empty instructions 0
+
+#!fsharp
+
+Cycle (Map ["a", 1]) instructions 0
