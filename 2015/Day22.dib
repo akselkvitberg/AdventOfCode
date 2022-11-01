@@ -1,0 +1,145 @@
+#!fsharp
+
+type Spell = 
+| MagicMissile
+| Drain
+| Shield
+| Poison
+| Recharge
+
+type Game = {HP: int; Mana: int; ReshargeCounter: int; ShieldCounter: int; PoisonCounter: int; BossHp: int; BossDamage: int; Spells: Spell list;}
+
+#!fsharp
+
+let spells = [
+    MagicMissile
+    Drain
+    Shield
+    Poison
+    Recharge
+]
+
+let SpellCost spell =
+    match spell with
+    | MagicMissile -> 53
+    | Drain -> 73
+    | Shield -> 113
+    | Poison -> 173
+    | Recharge -> 229
+
+#!fsharp
+
+let game = {HP = 50; Mana = 500; ReshargeCounter = 0; ShieldCounter = 0; PoisonCounter = 0 ; BossHp = 55; BossDamage = 8; Spells = []}
+
+let ApplyEffects game = 
+    let poisonDamage = if game.PoisonCounter > 0 then 3 else 0
+    let manaResharge = if game.ReshargeCounter > 0 then 101 else 0
+    { game with 
+        BossHp = game.BossHp - poisonDamage; 
+        Mana = game.Mana + manaResharge; 
+        ReshargeCounter = game.ReshargeCounter - 1; 
+        PoisonCounter = game.PoisonCounter - 1; 
+        ShieldCounter = game.ShieldCounter - 1
+    }
+
+let ApplySpell game =
+    let spell = game.Spells.Head
+    match spell, SpellCost spell with 
+    | MagicMissile, c when c <= game.Mana -> {game with BossHp = game.BossHp - 4; Spells = game.Spells.Tail; Mana = game.Mana - c}
+    | Drain, c when c <= game.Mana -> {game with BossHp = game.BossHp - 2; HP = game.HP + 2; Spells = game.Spells.Tail; Mana = game.Mana - c}
+    | Shield, c when c <= game.Mana -> {game with ShieldCounter = 6; Spells = game.Spells.Tail; Mana = game.Mana - c}
+    | Poison, c when c <= game.Mana -> {game with PoisonCounter = 6; Spells = game.Spells.Tail; Mana = game.Mana - c}
+    | Recharge, c when c <= game.Mana -> {game with ReshargeCounter = 5; Spells = game.Spells.Tail; Mana = game.Mana - c}
+    | _ -> { game with HP = 0; }
+
+let BossTurn game =
+    let game' = ApplyEffects game
+    if game'.BossHp <= 0 
+        then game' 
+    else
+        let damage = game'.BossDamage - (if game'.ShieldCounter > 0 then 7 else 0)
+        { game' with HP = game'.HP - damage;}
+
+let PlayerTurn game =
+    let game' = ApplyEffects game
+    if game'.BossHp <= 0
+        then game' 
+    else
+        ApplySpell game'
+
+let NextTurn game =
+    let game' = PlayerTurn game
+    if game'.BossHp <= 0
+    then game'
+    else BossTurn game'
+
+NextTurn { game with Spells = spells }
+
+#!fsharp
+
+let AnalyseGame game = 
+    match (game.HP, game.BossHp) with
+    | (a, _) when a <= 0 -> false
+    | (_, b) when b <= 0 -> true
+    | _ -> false
+
+#!fsharp
+
+{game with HP = 10; Mana = 250; BossHp = 13; BossDamage = 8; Spells = [Poison; MagicMissile]}
+|> NextTurn
+|> NextTurn
+
+#!fsharp
+
+let secondGame = {game with HP = 10; Mana = 250; BossHp = 13; BossDamage = 8; Spells = [Recharge; Shield; Drain; Poison; MagicMissile]}
+
+[1..secondGame.Spells.Length]
+|> Seq.fold (fun acc _ -> NextTurn acc) secondGame
+|> AnalyseGame
+
+#!fsharp
+
+let someSpells = [Poison; Recharge; Shield; Poison; MagicMissile; MagicMissile; MagicMissile; MagicMissile; MagicMissile]
+let thirdGame = {game with Spells = someSpells}
+
+[1..thirdGame.Spells.Length]
+|> Seq.scan (fun acc _ -> NextTurn acc) thirdGame
+
+#!fsharp
+
+let WonTheGame spells = 
+    let game' = { game with Spells = spells} 
+    [1..spells.Length]
+    |> Seq.fold (fun acc _ -> NextTurn acc) game'
+    |> AnalyseGame
+
+WonTheGame someSpells
+
+#!fsharp
+
+let maxSpend = someSpells |> Seq.sumBy (fun x -> SpellCost x)
+maxSpend
+
+#!fsharp
+
+let rec Recurse spellList =
+    seq {
+        for spell in spells do
+            let newSpellList = spell::spellList
+            if newSpellList |> Seq.sumBy SpellCost > maxSpend
+            then yield None
+            else
+                yield Some newSpellList
+                for otherList in (Recurse newSpellList |> Seq.choose id) do
+                    yield Some otherList
+    }
+
+let list = Recurse [] |> Seq.choose id //|> Seq.rev |> Seq.map (Seq.sumBy SpellCost)
+
+#!fsharp
+
+list 
+|> Seq.filter WonTheGame 
+//|> Seq.length
+|> Seq.map (fun x -> (x, x |> Seq.sumBy SpellCost))
+|> Seq.sortBy snd
