@@ -1,0 +1,19 @@
+#!fsharp
+
+let row = 2978
+let col = 3083
+
+let firstCode = 20151125L
+
+let code = (row + col - 1) * (row + col) / 2 - row + 1
+
+code
+
+#!fsharp
+
+let CalculateNext previous = (previous * 252533L) % 33554393L
+
+#!fsharp
+
+[2..code]
+|> Seq.fold (fun acc i -> CalculateNext acc) firstCode
