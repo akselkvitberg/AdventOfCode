@@ -51,4 +51,36 @@ replacements
 
 #!fsharp
 
-// Todo: Day 2
+let reverseMap = replacements |> Seq.map (fun (key,v) -> (v,key)) |> Seq.sortBy (fun (x, b)-> -x.Length)
+
+let Step (molecule, count) = 
+    reverseMap 
+        |> Seq.fold (fun (acc:string, count) (src, trg) -> 
+        if(acc.Contains(src)) 
+        then 
+            let regex = new RegularExpressions.Regex(src)
+            (regex.Replace(acc, trg, 1), count + 1)
+        else (acc, count))
+        (molecule, count)
+
+(molecule, 0)
+|> Step
+|> Step
+|> Step
+|> Step
+|> Step
+|> Step
+|> Step
+|> Step
+|> Step
+|> Step
+|> Step
+|> Step
+|> Step
+|> Step
+|> Step
+|> Step
+|> Step
+|> Step
+|> Step
+|> Step
