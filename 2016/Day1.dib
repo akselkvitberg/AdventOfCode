@@ -1,0 +1,97 @@
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 1 |> Split ", "
+input
+
+#!fsharp
+
+type Instruction = L of int | R of int
+
+let Parse (str:string) =
+    match str[0], str[1..] with
+    | 'L', a -> L (int a)
+    | 'R', a -> R (int a)
+
+let instructions = input |> Seq.map Parse |> Seq.toList
+
+#!fsharp
+
+type Direction = North | East | South | West
+
+let NextDirection direction instruction =
+    match direction, instruction with
+    | North, R l -> East, l
+    | North, L l -> West, l
+    | East,  R l ->  South, l
+    | East,  L l ->  North, l
+    | South, R l -> West, l
+    | South, L l -> East, l
+    | West,  R l ->  North, l
+    | West,  L l ->  South, l
+    
+NextDirection North (R 4)
+
+#!fsharp
+
+let Move x y direction =
+    match direction with
+    | North, length -> (x, y-length, North)
+    | East, length -> (x+length, y, East)
+    | South, length -> (x, y+length, South)
+    | West, length -> (x-length, y, West)
+
+Move 0 0 (East, 2)
+
+#!fsharp
+
+let Step (x, y, direction) instruction =
+    let direction' = NextDirection direction instruction
+    Move x y direction'
+
+Step (0, 0, North) (R 2)
+
+#!fsharp
+
+let (x, y, _) = instructions |> Seq.fold Step (0, 0, North)
+
+x + y |> abs
+
+#!fsharp
+
+let rec M (x, y, direction) instructions =
+    seq {
+        match instructions with
+        | [] -> ()
+        | instruction::rest ->
+            let direction' = NextDirection direction instruction
+            let res = match direction' with
+                        | North, length -> [y-length..y-1] |> List.rev |> List.map (fun y -> (x, y, North))
+                        | East, length  -> [x+1..x+length] |> List.map (fun x -> (x, y, East))
+                        | South, length -> [y+1..y+length] |> List.map (fun y -> (x, y, South)) 
+                        | West, length  -> [x-length..x-1] |> List.rev |> List.map (fun x -> (x, y, West))
+            yield! res
+            let a = res[^0]
+            yield! M a rest
+    }
+
+M (0, 0, North) [(R 5); (R 4); (R 3); (R 2)]
+
+#!fsharp
+
+let position = (M (0,0, North) instructions) |> Seq.toList
+let (x, y, _) = position[^0]
+abs (x + y)
+
+#!fsharp
+
+let rec CheckVisited visited positions = 
+    match positions with
+    | (x,y,_)::xs -> 
+        if Set.contains (x,y) visited then (x,y)
+        else CheckVisited (Set.add (x,y) visited) xs
+
+let (x,y) = CheckVisited Set.empty position
+abs x + abs y
