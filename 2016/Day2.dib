@@ -1,0 +1,80 @@
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 2 |> GetLines |> Array.map Seq.toArray
+
+#!fsharp
+
+let pos = 5
+
+let move nr instruction =
+    match instruction with
+    | 'U' when nr <=3 -> nr
+    | 'U' -> nr - 3
+    | 'D' when nr >= 7 -> nr
+    | 'D' -> nr + 3
+    | 'L' when nr % 3 = 1 -> nr
+    | 'L' -> nr - 1
+    | 'R' when nr % 3 = 0 -> nr
+    | 'R' -> nr + 1
+
+move 6 'R'
+
+#!fsharp
+
+let a = input[0] |> Seq.fold move 5
+let b = input[1] |> Seq.fold move a
+let c = input[2] |> Seq.fold move b
+let d = input[3] |> Seq.fold move c
+let e = input[4] |> Seq.fold move d
+
+a,b,c,d,e
+
+#!fsharp
+
+let keypad1 = 
+    [|
+        "     ";
+        " 123 ";
+        " 456 ";
+        " 789 ";
+        "     ";
+    |]
+
+let keypad2 = 
+    [|
+        "       ";
+        "   1   ";
+        "  234  ";
+        " 56789 ";
+        "  ABC  ";
+        "   D   ";
+        "       ";
+    |]
+
+let lookup (keypad:string[]) (x, y) = keypad[y][x]
+
+let move2 (keypad:string[]) (x,y) instruction =
+    let nextPos = match instruction with
+                    | 'U' -> (x, y-1)
+                    | 'D' -> (x, y+1)
+                    | 'L' -> (x-1, y)
+                    | 'R' -> (x+1, y)
+    if lookup keypad nextPos = ' ' then (x, y) else nextPos
+
+lookup keypad1 (move2 keypad1 (2, 2) 'D')
+
+#!fsharp
+
+let processLine position line =
+    line |> Seq.fold (fun acc ins -> move2 keypad2 acc ins) position
+
+#!fsharp
+
+input 
+|> Seq.scan processLine (1,3)
+|> Seq.skip 1 // why does scan return the first
+|> Seq.map (lookup keypad2 >> string)
+|> String.Concat

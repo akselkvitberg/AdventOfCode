@@ -28,4 +28,6 @@ let GetData day =
 
         str
 
-let Split (character:string) (input:string) = input.Split(character)
+let Split (character:string) (input:string) = input.Split(character, StringSplitOptions.RemoveEmptyEntries)
+
+let GetLines (input:string) = Split "\n" input
