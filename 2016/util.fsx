@@ -4,6 +4,8 @@ open System.IO
 open System.Net
 open System.Net.Http
 open System
+open System.Text.RegularExpressions
+
 
 let GetData day =
     let file = $"Inputs/{day}.txt"
@@ -31,3 +33,8 @@ let GetData day =
 let Split (character:string) (input:string) = input.Split(character, StringSplitOptions.RemoveEmptyEntries)
 
 let GetLines (input:string) = Split "\n" input
+
+let (|Regex|_|) pattern input = 
+    let m = Regex.Match(input, pattern)
+    if m.Success then Some(List.tail [ for g in m.Groups -> g.Value])
+    else None

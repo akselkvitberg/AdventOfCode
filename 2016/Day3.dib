@@ -1,0 +1,29 @@
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 3 |> GetLines |> Array.map (Split " " >> Array.map int)
+input[..4]
+
+#!fsharp
+
+let isValid [|a;b;c|] = a + b > c && b + c > a && c + a > b
+
+isValid [|5;10;25|]
+
+#!fsharp
+
+input |> Seq.countBy isValid
+
+#!fsharp
+
+let rotate (a:'T[][]) = 
+    [| for x in {0 .. a.[0].Length-1} -> [| for y in {0 .. a.Length-1} -> a.[y].[x] |] |]
+
+#!fsharp
+
+input
+|> Seq.chunkBySize 3
+|> Seq.collect rotate
+|> Seq.countBy isValid
