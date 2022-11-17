@@ -1,0 +1,43 @@
+#!fsharp
+
+let input = "wtnhxymk"
+input
+
+#!fsharp
+
+open System.Security.Cryptography
+
+let IsZeroHash (input:string) id =
+    let hash = input + id.ToString()
+               |> Encoding.ASCII.GetBytes
+               |> MD5.HashData
+    if hash[0] = byte 0 && hash[1] = byte 0 && hash[2] <= byte 15 then Some (hash[2].ToString("X2")[1], hash[3].ToString("X2")[0])
+    else None
+
+IsZeroHash "abc" "3231929"
+
+#!fsharp
+
+Seq.initInfinite id
+|> Seq.choose (IsZeroHash input)
+|> Seq.take 8
+|> Seq.map fst
+|> Seq.toArray
+|> fun chars -> new String(chars)
+
+#!fsharp
+
+let IsValidPosition (position, value) = 
+    let (success, pos) = Int32.TryParse(position.ToString())
+    if success && pos <= 7 then Some (position, value)
+    else None
+
+Seq.initInfinite id
+|> Seq.choose (IsZeroHash input)
+|> Seq.choose IsValidPosition
+|> Seq.distinctBy fst
+|> Seq.take 8
+|> Seq.sortBy fst
+|> Seq.map snd
+|> Seq.toArray
+|> fun chars -> new String(chars)
