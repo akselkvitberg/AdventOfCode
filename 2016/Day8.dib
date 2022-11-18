@@ -1,0 +1,89 @@
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let inputs = GetData 8 |> GetLines
+inputs[0..5]
+
+#!fsharp
+
+let grid = Array2D.create 6 50 false
+let testGrid = Array2D.create 3 7 false
+
+#!fsharp
+
+let displayGrid (grid:bool[,]) =
+    [|
+        for y in [0..grid.GetLength(0)-1] do
+            grid[y,*]
+            |> Seq.map (fun x -> if x then '█' else '░')
+            |> Seq.toArray
+            |> fun x -> new string(x)
+    |]
+    |> fun arr -> String.Join("\n", arr)
+
+displayGrid testGrid
+
+#!fsharp
+
+let Rect w h grid = Array2D.mapi (fun y x v -> if y < h && x < w then true else v) grid
+
+testGrid 
+|> Rect 3 2
+|> displayGrid
+
+#!fsharp
+
+// modulus that handles negative wraparound
+let (%%) a lim = (lim + a % lim) % lim
+
+-23 %% 10
+
+#!fsharp
+
+let RotateColumn column by (grid:bool[,]) =
+    let height = grid.GetLength(0)
+    grid |> Array2D.mapi (fun y x v -> if x = column then grid[(y - by) %% height, x] else v)
+
+testGrid 
+|> Rect 3 2
+|> RotateColumn 1 1
+|> displayGrid
+
+#!fsharp
+
+let RotateRow row by (grid:bool[,]) =
+    let width = grid.GetLength(1)
+    grid |> Array2D.mapi (fun y x v -> if y = row then grid[y, (x-by) %% width] else v)
+
+testGrid 
+|> Rect 3 2
+|> RotateColumn 1 1
+|> RotateRow 0 4
+|> displayGrid
+
+#!fsharp
+
+testGrid 
+|> Rect 3 2
+|> RotateColumn 1 1
+|> RotateRow 0 4
+|> RotateColumn 1 1
+|> displayGrid
+
+#!fsharp
+
+let processInstruction (grid:bool[,]) (line:string) =
+    match line with 
+    | Regex "rect (\d+)x(\d+)" [Int x; Int y] -> Rect x y grid
+    | Regex "rotate row y=(\d+) by (\d+)" [Int row; Int by] -> RotateRow row by grid
+    | Regex "rotate column x=(\d+) by (\d+)" [Int column; Int by] -> RotateColumn column by grid
+
+let result = inputs
+             |> Seq.fold processInstruction grid
+result |> displayGrid
+
+#!fsharp
+
+result |> Seq.cast<bool> |> Seq.countBy id
