@@ -1,0 +1,103 @@
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 10 |> GetLines |> Array.toList
+input[..5]
+
+#!fsharp
+
+let example = [
+    "value 5 goes to bot 2"
+    "bot 2 gives low to bot 1 and high to bot 0"
+    "value 3 goes to bot 1"
+    "bot 1 gives low to output 1 and high to bot 0"
+    "bot 0 gives low to output 2 and high to output 0"
+    "value 2 goes to bot 2"
+]
+
+#!fsharp
+
+type Bot = {
+    BotLow:string
+    BotHigh:string
+    Values: int list
+}
+
+let bots = Map.empty<string, Bot>
+
+let parse map input = 
+    match input with 
+    | Regex "(.+) gives low to (.+) and high to (.+)" [bot; low; high] -> Map.add bot {BotLow = low; BotHigh = high; Values = []} map
+    | _ -> map
+
+let parseBots input = input |> Seq.fold (parse) Map.empty
+
+parseBots example
+
+#!fsharp
+
+type MicrochipHandover = MicrochipHandover of string * int
+
+let parseValue =
+    function 
+    | Regex "value (\d+) goes to (.+)" [Int value; bot] -> Some (MicrochipHandover(bot, value))
+    | _ -> None
+
+let parseValues input =
+    input |> List.choose parseValue
+
+parseValues example
+
+#!fsharp
+
+let rec processValues (bots:Map<string,Bot>) (handovers: MicrochipHandover list) = 
+    match handovers with 
+    | (MicrochipHandover(botId, v))::xs when bots.ContainsKey(botId) ->
+        let bot = { bots[botId] with Values = v::bots[botId].Values}
+        if(bot.Values.Length = 2)
+        then
+            if (bot.Values = [61;17] || bot.Values = [17;61]) then botId
+            else
+                let newBots = Map.add botId {bot with Values = []} bots
+                let handoverLow = MicrochipHandover (bot.BotLow, bot.Values |> Seq.min)
+                let handoverHigh = MicrochipHandover (bot.BotHigh, bot.Values |> Seq.max)
+                processValues newBots (handoverLow::handoverHigh::xs)
+        else
+            let newBots = Map.add botId bot bots
+            processValues newBots xs
+    | (MicrochipHandover(botId, v))::xs -> 
+        processValues bots xs
+    | [] -> "not found"
+
+let bots = parseBots input
+let values = parseValues input
+processValues bots values
+
+#!fsharp
+
+let rec processValues outputs (bots:Map<string,Bot>) (handovers: MicrochipHandover list) = 
+    match handovers with 
+    | (MicrochipHandover(botId, v))::xs when bots.ContainsKey(botId) ->
+        let bot = { bots[botId] with Values = v::bots[botId].Values}
+        if(bot.Values.Length = 2)
+        then
+            let newBots = Map.add botId {bot with Values = []} bots
+            let handoverLow = MicrochipHandover (bot.BotLow, bot.Values |> Seq.min)
+            let handoverHigh = MicrochipHandover (bot.BotHigh, bot.Values |> Seq.max)
+            processValues outputs newBots (handoverLow::handoverHigh::xs)
+        else
+            let newBots = Map.add botId bot bots
+            processValues outputs newBots xs
+    | (MicrochipHandover(botId, v))::xs -> 
+        processValues ((botId, v)::outputs) bots xs
+    | [] -> outputs
+
+let bots = parseBots input
+let values = parseValues input
+let outputs = processValues [] bots values
+outputs
+|> Seq.filter (fun (id, value) -> id = "output 0" || id = "output 1" || id = "output 2")
+|> Seq.map snd
+|> Seq.reduce (*)
