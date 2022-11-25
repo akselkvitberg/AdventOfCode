@@ -1,0 +1,46 @@
+#!fsharp
+
+#load "util.fsx"
+open Utils
+let input = "ahsbgdzn"
+input
+
+#!fsharp
+
+open System.Security.Cryptography
+
+let MD5 (input:string) int = Convert.ToHexString(MD5.HashData(Encoding.ASCII.GetBytes($"{input}{int}"))).ToLower()
+
+MD5 "abc" 18
+
+#!fsharp
+
+let has5ofCharacter (segment:string) (hash:string) =
+    hash.Contains(segment)
+
+let isNext1000Matching input int segment =
+    [int+1..int+1000]
+    |> Seq.map (MD5 input)
+    |> Seq.exists (has5ofCharacter segment)
+
+let isPotentialKey input int = 
+    let key = MD5 input int
+    match key with
+    | Regex "(.)\1\1" [c] -> isNext1000Matching input int (new string(c[0], 5))
+    | _ -> false
+
+isPotentialKey "abc" 39
+
+#!fsharp
+
+Seq.initInfinite (fun x -> x + 1)
+|> Seq.filter (isPotentialKey "abc")
+|> Seq.skip 63 // 64 is the next
+|> Seq.head
+
+#!fsharp
+
+Seq.initInfinite (fun x -> x + 1)
+|> Seq.filter (isPotentialKey input)
+|> Seq.skip 63 // 64 is the next
+|> Seq.head
