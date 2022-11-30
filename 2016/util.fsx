@@ -24,11 +24,13 @@ let GetData day =
         client.BaseAddress <- new Uri("https://adventofcode.com");
         
         let str = client.GetStringAsync($"/2016/day/{day}/input").GetAwaiter().GetResult();
+
+        let trimmedstr = str.Trim()
         
         Directory.CreateDirectory "Inputs" |> ignore
-        File.WriteAllText (file, str)
+        File.WriteAllText (file, trimmedstr)
 
-        str
+        trimmedstr
 
 let Split (character:string) (input:string) = input.Split(character, StringSplitOptions.RemoveEmptyEntries)
 

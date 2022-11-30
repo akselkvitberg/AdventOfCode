@@ -1,0 +1,62 @@
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 15 |> GetLines |> Seq.toList
+input
+
+#!fsharp
+
+type Disc = {
+    DiscId:int
+    Positions:int
+    Position0:int
+}
+
+#!fsharp
+
+let parse line = 
+    match line with
+    | Regex "Disc #(\d) has (\d+) positions; at time=0, it is at position (\d+)" [Int discId; Int positionCount; Int position0 ] -> 
+        {DiscId = discId; Positions = positionCount; Position0 = position0 }
+    | _ -> failwith line
+
+let discs = input |> List.map parse
+discs
+
+#!fsharp
+
+let positionAt t disc =
+    (disc.Position0 + t + disc.DiscId) % disc.Positions
+
+[0..10]
+|> Seq.map (fun t -> positionAt t discs[5])
+
+#!fsharp
+
+let wouldPass t disc =
+    positionAt t disc = 0
+
+wouldPass 2 discs[0]
+
+#!fsharp
+
+[0..1000000]
+|> Seq.find (fun t ->
+    discs
+    |> Seq.forall (wouldPass t)
+)
+
+#!fsharp
+
+let newDiscs = {DiscId = 7; Positions = 11; Position0 = 0}::discs
+newDiscs
+
+#!fsharp
+
+[0..10000000]
+|> Seq.find (fun t ->
+    newDiscs
+    |> Seq.forall (wouldPass t)
+)
