@@ -1,0 +1,25 @@
+#!fsharp
+
+let input = 3014603
+
+#!fsharp
+
+let getElvesAndLeft count =
+    Seq.init count (fun n -> n+1, (n+1) % count + 1)
+    |> Map.ofSeq
+
+getElvesAndLeft 5
+
+#!fsharp
+
+let rec eliminateLeft (elves:Map<int,int>) index =
+    let nextElf = elves[index]
+    if nextElf = index then index
+    else
+        eliminateLeft (elves |> Map.add index elves[nextElf] |> Map.remove nextElf) elves[nextElf]
+
+eliminateLeft (getElvesAndLeft 5) 1
+
+#!fsharp
+
+eliminateLeft (getElvesAndLeft input) 1
