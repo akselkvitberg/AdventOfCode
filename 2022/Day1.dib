@@ -1,0 +1,27 @@
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 1
+
+let elves = 
+    input
+    |> Split "\n\n"
+    |> Array.map (GetLines >> Seq.map int)
+
+elves[..4]
+
+#!fsharp
+
+elves
+|> Seq.map (Seq.sum)
+|> Seq.max
+
+#!fsharp
+
+elves
+|> Seq.map (Seq.sum)
+|> Seq.sortByDescending id
+|> Seq.take 3
+|> Seq.sum
