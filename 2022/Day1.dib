@@ -8,7 +8,7 @@ let input = GetData 1
 let elves = 
     input
     |> Split "\n\n"
-    |> Array.map (GetLines >> Seq.map int)
+    |> Array.map (GetLines >> Array.map int)
 
 elves[..4]
 
