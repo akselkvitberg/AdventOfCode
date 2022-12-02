@@ -1,0 +1,94 @@
+#!csharp
+
+var input = System.IO.File.ReadAllLines("Inputs/2.txt");
+
+enum Move {
+    Rock = 1,
+    Paper = 2,
+    Scissors = 3
+}
+
+enum Result {
+    Win = 6,
+    Draw = 3,
+    Loss = 0
+}
+
+#!csharp
+
+Move ParseChar(char input){
+    return input switch {
+        'A' => Move.Rock,
+        'X' => Move.Rock,
+        'B' => Move.Paper,
+        'Y' => Move.Paper,
+        'C' => Move.Scissors,
+        _ => Move.Scissors,
+    };
+}
+
+(Move move, Move response) Parse(string line) {
+    return (
+        ParseChar(line[0]),
+        ParseChar(line[2])
+    );
+}
+
+Parse("A Y")
+
+#!csharp
+
+Result IsWin(Move move, Move response){
+    return (move, response) switch {
+        (Move.Rock, Move.Rock) => Result.Draw,
+        (Move.Paper, Move.Paper) => Result.Draw,
+        (Move.Scissors, Move.Scissors) => Result.Draw ,
+        (Move.Rock, Move.Paper) => Result.Win,
+        (Move.Paper, Move.Scissors) => Result.Win,
+        (Move.Scissors, Move.Rock) => Result.Win,
+        _ => Result.Loss
+    };
+}
+
+IsWin(Move.Rock, Move.Scissors)
+
+#!csharp
+
+int Score(Move move, Move response) => (int)IsWin(move, response) + (int)response;
+
+Score(Move.Rock, Move.Paper)
+
+#!csharp
+
+input
+.Select(Parse)
+.Select(move => Score(move.move, move.response))
+.Sum()
+
+#!csharp
+
+(Move move, Move response) Parse2(string line)
+{
+    var move = ParseChar(line[0]);
+
+    var response = (line[2], move) switch {
+        ('X', Move.Rock) => Move.Scissors,
+        ('X', Move.Paper) => Move.Rock,
+        ('X', Move.Scissors) => Move.Paper,
+        ('Z', Move.Rock) => Move.Paper,
+        ('Z', Move.Paper) => Move.Scissors,
+        ('Z', Move.Scissors) => Move.Rock,
+        (_,_) => move
+    };
+
+    return (move, response);
+}
+
+Parse2("A X")
+
+#!csharp
+
+input
+.Select(Parse2)
+.Select(move => Score(move.move, move.response))
+.Sum()
