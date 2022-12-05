@@ -42,3 +42,7 @@ let (|Regex|_|) pattern input =
     else None
 
 let (|Int|_|) (str:string) = match Int32.TryParse str with true, value -> Some value | _ -> None
+
+let RegexReplace pattern (replacement:string) input =
+    let regex = new Regex(pattern)
+    regex.Replace(input, replacement)
