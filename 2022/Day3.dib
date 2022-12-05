@@ -1,0 +1,82 @@
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 3 |> GetLines
+input[..3]
+
+#!fsharp
+
+let parseChar =
+    function
+    | a when a >= 'a' && a <= 'z' -> (int a) - (int 'a') + 1
+    | a -> (int a) - (int 'A') + 27
+    
+let parse (input:string) = input.ToCharArray() |> Array.map parseChar
+
+[
+    'a'
+    'A'
+    'b'
+    'B'
+]
+|> Seq.map parseChar
+
+#!fsharp
+
+let getCompartments (line:int array) = Set.ofArray line[..line.Length / 2 - 1], Set.ofArray line[line.Length/2..]
+let getCommonItems (c1, c2) = Set.intersect c1 c2
+
+"vJrwpWtwJgWrhcsFMMfFFhFp"
+|> parse
+|> getCompartments
+|> getCommonItems
+
+#!fsharp
+
+[
+    "vJrwpWtwJgWrhcsFMMfFFhFp"
+    "jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL"
+    "PmmdzqPrVvPwwTWBwg"
+    "wMqvLMZHhHMvwLHjbvcjnnSBnvTQFn"
+    "ttgJtRGJQctTZtZT"
+    "CrZsJsPPZsGzwwsLwLmpwMDw"
+]
+|> Seq.map parse
+|> Seq.map getCompartments
+|> Seq.collect getCommonItems
+|> Seq.sum
+
+#!fsharp
+
+input
+|> Seq.map parse
+|> Seq.map getCompartments
+|> Seq.collect getCommonItems
+|> Seq.sum
+
+#!fsharp
+
+[
+    "vJrwpWtwJgWrhcsFMMfFFhFp"
+    "jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL"
+    "PmmdzqPrVvPwwTWBwg"
+    "wMqvLMZHhHMvwLHjbvcjnnSBnvTQFn"
+    "ttgJtRGJQctTZtZT"
+    "CrZsJsPPZsGzwwsLwLmpwMDw"
+]
+|> Seq.map parse
+|> Seq.map Set.ofArray
+|> Seq.chunkBySize 3
+|> Seq.collect Set.intersectMany
+|> Seq.sum
+
+#!fsharp
+
+input
+|> Seq.map parse
+|> Seq.map Set.ofArray
+|> Seq.chunkBySize 3
+|> Seq.collect Set.intersectMany
+|> Seq.sum
