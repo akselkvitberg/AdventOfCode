@@ -1,0 +1,22 @@
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 6
+input[..20], input.Length
+
+#!fsharp
+
+let findUniqueCharacters count list =
+    list
+    |> Seq.windowed count
+    |> Seq.map Array.distinct
+    |> Seq.findIndex (fun x -> x.Length = count)
+    |> (+) count
+
+findUniqueCharacters 4 input
+
+#!fsharp
+
+findUniqueCharacters 14 input
