@@ -1,0 +1,126 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":null,"items":[{"name":"csharp","languageName":"C#","aliases":["c#","cs"]},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"html","languageName":"HTML"},{"name":"sql","languageName":"SQL"},{"name":"kql","languageName":"KQL"},{"name":"mermaid","languageName":"Mermaid"},{"name":"httpRequest","languageName":"http"},{"name":"value"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 9 |> GetLines
+input[0..5]
+
+#!fsharp
+
+let example = [
+    "R 4"
+    "U 4"
+    "L 3"
+    "D 1"
+    "R 4"
+    "D 1"
+    "L 5"
+    "R 2"
+]
+
+#!fsharp
+
+let parse input =
+    input
+    |> Seq.collect (fun line -> 
+        let [|direction; Int count|] = Split " " line
+        Array.create count direction
+    )
+
+example
+|> parse
+|> Seq.take 5
+
+#!fsharp
+
+let moveHead (x,y) move = 
+    match move with
+    | "U" -> (x, y+1)
+    | "D" -> (x, y-1)
+    | "R" -> (x+1, y)
+    | "L" -> (x-1, y)
+
+moveHead (0,0) "U"
+
+#!fsharp
+
+let moveTail (hx, hy) (tx, ty) =
+    if abs (hx - tx) <= 1 && abs (hy - ty) <= 1 
+    then (tx, ty)
+    else (tx + sign (hx - tx), ty + sign (hy - ty))
+
+moveTail (1,2) (0,0)
+
+#!fsharp
+
+let step (head, tail) move =
+    let head' = moveHead head move
+    let tail' = moveTail head' tail
+    (head', tail')
+
+step ((1,1), (0,0)) "U"
+
+#!fsharp
+
+let walk input =
+    input
+    |> parse
+    |> Seq.scan (fun (head, tail) move -> step (head, tail) move ) ((0,0),(0,0))
+    |> Seq.map snd
+    |> Seq.distinct
+    |> Seq.length
+
+walk example
+
+#!fsharp
+
+walk input
+
+#!fsharp
+
+// idea to solve part 2: use list of knots in step function. Use Seq.scan to move? 
+let largeExample = [
+    "R 5"
+    "U 8"
+    "L 8"
+    "D 3"
+    "R 17"
+    "D 10"
+    "L 25"
+    "U 20"
+]
+
+#!fsharp
+
+let step2 (head, knots) move =
+    let head' = moveHead head move
+    let knots' = knots |> Array.scan (fun h t -> moveTail h t) head' |> Array.skip 1
+    (head', knots')
+
+step2 ((0,0), [|(0,0);(0,0);(0,0)|]) "U"
+
+#!fsharp
+
+let walk2 input tailLength =
+    input
+    |> parse
+    |> Seq.scan (fun (head, tail) move -> step2 (head, tail) move ) ((0,0), Array.create tailLength (0,0))
+    |> Seq.map (snd >> Seq.last)
+    |> Seq.distinct
+    |> Seq.length
+
+walk2 largeExample 9
+
+#!fsharp
+
+walk2 input 9
+
+#!fsharp
+
+// Solution 2 works for solution 1 as well
+walk2 input 1
