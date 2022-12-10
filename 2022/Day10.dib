@@ -1,0 +1,81 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":null,"items":[{"name":"csharp","languageName":"C#","aliases":["c#","cs"]},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"html","languageName":"HTML"},{"name":"sql","languageName":"SQL"},{"name":"kql","languageName":"KQL"},{"name":"mermaid","languageName":"Mermaid"},{"name":"httpRequest","languageName":"http"},{"name":"value"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 10 |> GetLines
+input[..5]
+
+#!fsharp
+
+let example = File.ReadAllLines "Inputs/10-example.txt" // large example from instructions
+example[..5]
+
+#!fsharp
+
+type Instruction = 
+    | Noop 
+    | AddX of int 
+
+#!fsharp
+
+let parse input = 
+    match input with
+    | "noop" -> [|Noop|]
+    | Regex "addx (-?\d+)" [Int v] -> [|Noop; AddX v|] // Addx takes two cycles
+
+["noop"; "addx 4"; "addx -1"]
+|> Seq.collect parse
+
+#!fsharp
+
+let processInstructions (register, cycle) instruction =
+    match instruction with
+    | Noop -> (register, cycle + 1)
+    | AddX v -> (register + v, cycle + 1)
+
+[Noop; AddX 4]
+|> Seq.scan processInstructions (0, 0)
+
+#!fsharp
+
+let getSignalStrength input =
+    input
+    |> Seq.collect parse
+    |> Seq.scan processInstructions (1,1)
+    |> Seq.skip 19
+    |> Seq.chunkBySize 40
+    |> Seq.map (Seq.head >> (fun (a,b) -> a*b))
+    |> Seq.sum
+
+getSignalStrength example
+
+#!fsharp
+
+getSignalStrength input
+
+#!fsharp
+
+let drawPixel (pos, scan) =
+    if abs (pos - (scan % 40)) <= 1 
+    then '█'
+    else ' '
+
+let drawScreen input =
+    input
+    |> Seq.collect parse
+    |> Seq.scan processInstructions (1,0)
+    |> Seq.map drawPixel
+    |> Seq.chunkBySize 40
+    |> Seq.map String
+    |> fun a -> String.Join("\n", a)
+
+drawScreen example
+
+#!fsharp
+
+drawScreen input
