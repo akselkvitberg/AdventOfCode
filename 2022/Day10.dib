@@ -23,13 +23,12 @@ type Instruction =
 
 #!fsharp
 
-let parse input = 
-    match input with
-    | "noop" -> [|Noop|]
-    | Regex "addx (-?\d+)" [Int v] -> [|Noop; AddX v|] // Addx takes two cycles
+let parse (input:string) = 
+    match input.Split(" ") with
+    | [|"noop"|] -> [|Noop|]
+    | [|"addx" ; Int v|] -> [|Noop; AddX v|] // Addx takes two cycles
 
-["noop"; "addx 4"; "addx -1"]
-|> Seq.collect parse
+["noop"; "addx 4"; "addx -1"] |> Seq.collect parse
 
 #!fsharp
 
@@ -38,8 +37,7 @@ let processInstructions (register, cycle) instruction =
     | Noop -> (register, cycle + 1)
     | AddX v -> (register + v, cycle + 1)
 
-[Noop; AddX 4]
-|> Seq.scan processInstructions (0, 0)
+[Noop; AddX 4] |> Seq.scan processInstructions (0, 0)
 
 #!fsharp
 
@@ -47,10 +45,8 @@ let getSignalStrength input =
     input
     |> Seq.collect parse
     |> Seq.scan processInstructions (1,1)
-    |> Seq.skip 19
-    |> Seq.chunkBySize 40
-    |> Seq.map (Seq.head >> (fun (a,b) -> a*b))
-    |> Seq.sum
+    |> (Seq.skip 19 >> Seq.chunkBySize 40 >> Seq.map Seq.head) // Get every 40'th element starting at element 20
+    |> Seq.sumBy (fun (a,b) -> a*b)
 
 getSignalStrength example
 
@@ -72,7 +68,7 @@ let drawScreen input =
     |> Seq.map drawPixel
     |> Seq.chunkBySize 40
     |> Seq.map String
-    |> fun a -> String.Join("\n", a)
+    |> String.concat "\n"
 
 drawScreen example
 
