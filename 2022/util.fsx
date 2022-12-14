@@ -34,7 +34,10 @@ let GetData day =
 
 let Split (character:string) (input:string) = input.Split(character, StringSplitOptions.RemoveEmptyEntries)
 
-let GetLines (input:string) = Split "\n" input
+let GetLines (input:string)  = input.Split([|"\n"; "\r\n" |], StringSplitOptions.RemoveEmptyEntries)
+let GetBlocks (input:string) = input.Split([|"\n\n"; "\r\n\r\n"|], StringSplitOptions.RemoveEmptyEntries)
+let ToLower (input:string) = input.ToLower()
+let ToUpper (input:string) = input.ToUpper()
 
 let (|Regex|_|) pattern input = 
     let m = Regex.Match(input, pattern)
@@ -49,3 +52,12 @@ let (|ULong|_|) (str:string) = match UInt64.TryParse str with true, value -> Som
 let RegexReplace pattern (replacement:string) input =
     let regex = new Regex(pattern)
     regex.Replace(input, replacement)
+
+let Match pattern input =
+    let m = Regex.Match(input, pattern)
+    if m.Success then List.tail [ for g in m.Groups -> g.Value]
+    else []
+
+let Matches pattern input =
+    let m = Regex.Matches(input, pattern)
+    m |> Seq.collect (fun x -> x.Groups |> Seq.collect (fun y -> y.Captures |> Seq.map (fun z -> z.Value)) |> Seq.skip 1 |> Seq.toList) |> Seq.toList
