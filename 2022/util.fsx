@@ -34,8 +34,8 @@ let GetData day =
 
 let Split (character:string) (input:string) = input.Split(character, StringSplitOptions.RemoveEmptyEntries)
 
-let GetLines (input:string)  = input.Split([|"\n"; "\r\n" |], StringSplitOptions.RemoveEmptyEntries)
-let GetBlocks (input:string) = input.Split([|"\n\n"; "\r\n\r\n"|], StringSplitOptions.RemoveEmptyEntries)
+let GetLines (input:string)  = input.Trim().Split([|"\n"; "\r\n" |], StringSplitOptions.RemoveEmptyEntries)
+let GetBlocks (input:string) = input.Trim().Split([|"\n\n"; "\r\n\r\n"|], StringSplitOptions.RemoveEmptyEntries)
 let ToLower (input:string) = input.ToLower()
 let ToUpper (input:string) = input.ToUpper()
 

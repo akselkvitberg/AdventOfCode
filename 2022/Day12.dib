@@ -1,0 +1,128 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":null,"items":[{"name":"csharp","languageName":"C#","aliases":["c#","cs"]},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"html","languageName":"HTML"},{"name":"sql","languageName":"SQL"},{"name":"kql","languageName":"KQL"},{"name":"mermaid","languageName":"Mermaid"},{"name":"httpRequest","languageName":"http"},{"name":"value"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 12 |> GetLines
+input[0..3]
+
+#!fsharp
+
+let example =
+    """
+    Sabqponm
+    abcryxxl
+    accszExk
+    acctuvwj
+    abdefghi
+    """
+    |> GetLines
+    |> Array.map (fun x -> x.Trim())
+
+example
+
+#!fsharp
+
+let parseChar char =
+    match char with
+    | 'S' -> -1
+    | 'E' -> int 'z' - (int 'a' - 1)
+    | c -> int c - int 'a'
+
+let parseLine line = 
+    line
+    |> Seq.map parseChar
+    |> Seq.toArray
+
+parseLine example[0]
+
+#!fsharp
+
+module Array2D =
+    let toArray (arr: 'T [,]) = arr |> Seq.cast<'T> |> Seq.toArray
+
+let parse input =
+    input
+    |> Seq.map parseLine
+    |> Seq.toArray
+    |> array2D
+    |> Array2D.mapi (fun x y i -> ((x,y), i))
+    |> Array2D.toArray
+    |> Map.ofArray
+
+printfn "%A" (parse example)
+
+#!fsharp
+
+let getEndpoints terrain = 
+    terrain |> Map.toSeq |> Seq.minBy snd |> fst, terrain |> Map.toSeq |> Seq.maxBy snd |> fst
+
+example
+|> parse
+|> getEndpoints
+
+#!fsharp
+
+example |> parse |> Map.find (2,5)
+
+#!fsharp
+
+let isNeighbour (x,y) (x',y') =
+    match abs (x' - x), abs(y' - y) with
+    | (1,0) -> true
+    | (0, 1) -> true
+    | _ -> false
+
+let findTraversableNeighbours terrain pos =
+    let height = terrain |> Map.find pos
+    terrain |> Map.filter (fun key v -> isNeighbour pos key && v <= height + 1) |> Map.keys |> Seq.toList
+
+
+findTraversableNeighbours (example |> parse) (2,3)
+
+#!fsharp
+
+let findShortestPath terrain =
+
+    let (start, stop) = getEndpoints terrain
+
+    let rec propagateDistance distances positions =
+        match positions with 
+        | [] -> distances
+        | (pos, distance)::xs ->
+            let existingDistance = distances |> Map.tryFind pos
+            match existingDistance with 
+            | Some d when d <= distance -> propagateDistance distances xs
+            | _ ->
+                let newDistanceMap = distances |> Map.add pos distance
+                let neighbours = findTraversableNeighbours terrain pos |> List.map (fun pos -> (pos, distance + 1))
+                propagateDistance newDistanceMap (neighbours |> List.append xs)
+
+    let distances = propagateDistance Map.empty [(start, 0)]
+
+    distances[stop]
+
+findShortestPath (example |> parse)
+
+#!fsharp
+
+findShortestPath (input |> parse)
+
+#!fsharp
+
+// todo: does not work
+let findBetterShortestPath input =
+    let terrain = input |> parse |> Map.map (fun k v -> if v = -1 then 0 else v)
+    let startingPositions = terrain |> Map.filter (fun k v -> v = 0) |> Map.toSeq
+
+    seq {
+        for (pos, _) in startingPositions do
+            let t = Map.add pos -1 terrain
+            yield (pos, findShortestPath t)
+    }
+
+findBetterShortestPath example
