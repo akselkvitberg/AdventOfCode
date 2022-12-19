@@ -78,11 +78,18 @@ let isNeighbour (x,y) (x',y') =
     | _ -> false
 
 let findTraversableNeighbours terrain pos =
-    let height = terrain |> Map.find pos
-    terrain |> Map.filter (fun key v -> isNeighbour pos key && v <= height + 1) |> Map.keys |> Seq.toList
+    let add (a1, a2) (b1, b2) = 
+        a1 + b1, a2 + b2
 
+    match terrain |> Map.tryFind pos with 
+    | None -> []
+    | Some height -> 
+        [(0,1); (1,0); (0,-1); (-1,0)] 
+        |> Seq.map (add pos)
+        |> Seq.choose (fun p -> Map.tryFind p terrain |> Option.filter (fun v -> v >= height - 1) |> Option.map (fun _ -> p))
+        |> Seq.toList
 
-findTraversableNeighbours (example |> parse) (2,3)
+findTraversableNeighbours (example |> parse) (0,0)
 
 #!fsharp
 
@@ -90,7 +97,11 @@ let findShortestPath terrain =
 
     let (start, stop) = getEndpoints terrain
 
+    let terrain' = terrain |> Map.add start 0 |> Map.add stop 25 // bring start and stop down
+    let mutable count = 0
+
     let rec propagateDistance distances positions =
+        count <- count + 1
         match positions with 
         | [] -> distances
         | (pos, distance)::xs ->
@@ -99,12 +110,13 @@ let findShortestPath terrain =
             | Some d when d <= distance -> propagateDistance distances xs
             | _ ->
                 let newDistanceMap = distances |> Map.add pos distance
-                let neighbours = findTraversableNeighbours terrain pos |> List.map (fun pos -> (pos, distance + 1))
-                propagateDistance newDistanceMap (neighbours |> List.append xs)
+                let neighbours = findTraversableNeighbours terrain' pos |> Seq.map (fun pos -> (pos, distance + 1))
+                let neighborsToPropagate = neighbours |> Seq.filter (fun (pos, dist) -> newDistanceMap.ContainsKey(pos) |> not || newDistanceMap.TryFind(pos) |> Option.exists (fun v -> v > dist)) |> Seq.toList
+                propagateDistance newDistanceMap (neighborsToPropagate |> List.append xs)
 
-    let distances = propagateDistance Map.empty [(start, 0)]
-
-    distances[stop]
+    let distances = propagateDistance Map.empty [(stop, 0)]
+    //printf $"Unnessesary counts {count}"
+    distances[start]
 
 findShortestPath (example |> parse)
 
@@ -114,15 +126,26 @@ findShortestPath (input |> parse)
 
 #!fsharp
 
-// todo: does not work
 let findBetterShortestPath input =
-    let terrain = input |> parse |> Map.map (fun k v -> if v = -1 then 0 else v)
-    let startingPositions = terrain |> Map.filter (fun k v -> v = 0) |> Map.toSeq
+    let terrain = input |> parse
+    let (start, stop) = getEndpoints terrain
+
+    let terrain' = terrain |> Map.add start 0
+    let startingPositions = terrain' |> Map.filter (fun k v -> v = 0) |> Map.toSeq
 
     seq {
         for (pos, _) in startingPositions do
-            let t = Map.add pos -1 terrain
-            yield (pos, findShortestPath t)
+            //let t = Map.add pos -1 terrain'
+            yield (pos, findShortestPath terrain)
     }
 
 findBetterShortestPath example
+
+#!fsharp
+
+//findBetterShortestPath input
+//|> Seq.length
+
+#!fsharp
+
+//input |> parse |> Map.count
