@@ -69,3 +69,41 @@ part1 example 10
 #!fsharp
 
 part1 input 2000000
+
+#!fsharp
+
+let part2 input maxCoord =
+    let sensors = input |> Array.map parseLine
+
+    let getSectionOn line ((sensorX, sensorY), _, size) =
+        let rem = size - abs (line - sensorY)
+        if (rem >= 0) then Some ((sensorX-rem), (sensorX+rem))
+        else None
+    let clamp (rangeStart, rangeEnd) =
+        (max 0 rangeStart, min maxCoord rangeEnd)
+
+    let findGap ranges = 
+        let (x1, x2) = 
+            ranges
+            |> Seq.reduce (fun (from1, to1) (from2, to2) -> if to1 >= from2-1 then (from1, max to2 to1) else (-to1-1), to2) // I don't like this - can I short cirquit this once I find a gap?
+        if x1 < 0 || x2 <> maxCoord then Some -x1
+        else None
+
+
+    [0..maxCoord]
+    |> Seq.map (fun line -> sensors 
+                            |> Seq.choose (getSectionOn line) 
+                            |> Seq.map clamp 
+                            |> Seq.sortBy fst 
+                            |> findGap
+                )
+    |> Seq.mapi (fun i x -> x |> Option.map (fun o -> (o, i)))
+    |> Seq.choose id
+    |> Seq.head
+    |> fun (x, y) -> int64 x * 4000000L + int64 y
+
+part2 example 20
+
+#!fsharp
+
+part2 input 4000000
