@@ -1,0 +1,71 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 15 |> GetLines
+input[0]
+
+#!fsharp
+
+let exampleText = """Sensor at x=2, y=18: closest beacon is at x=-2, y=15
+Sensor at x=9, y=16: closest beacon is at x=10, y=16
+Sensor at x=13, y=2: closest beacon is at x=15, y=3
+Sensor at x=12, y=14: closest beacon is at x=10, y=16
+Sensor at x=10, y=20: closest beacon is at x=10, y=16
+Sensor at x=14, y=17: closest beacon is at x=10, y=16
+Sensor at x=8, y=7: closest beacon is at x=2, y=10
+Sensor at x=2, y=0: closest beacon is at x=2, y=10
+Sensor at x=0, y=11: closest beacon is at x=2, y=10
+Sensor at x=20, y=14: closest beacon is at x=25, y=17
+Sensor at x=17, y=20: closest beacon is at x=21, y=22
+Sensor at x=16, y=7: closest beacon is at x=15, y=3
+Sensor at x=14, y=3: closest beacon is at x=15, y=3
+Sensor at x=20, y=1: closest beacon is at x=15, y=3
+"""
+let example = exampleText |> GetLines
+
+#!fsharp
+
+let parseLine line = 
+    let [Int sensorX; Int sensorY; Int beaconX; Int beaconY] = Match "Sensor at x=([-\d]+), y=([-\d]+): closest beacon is at x=([-\d]+), y=([-\d]+)" line
+    let manhattanDistance = abs(sensorX - beaconX) + abs(sensorY - beaconY)
+    (sensorX, sensorY), (beaconX, beaconY), manhattanDistance
+
+example
+|> Seq.map parseLine
+|> Seq.take 3
+
+#!fsharp
+
+let getSizeOnLine line ((sensorX, sensorY), _, size) =
+    let diffY = abs (line - sensorY)
+    let rem = size - diffY
+    if (rem >= 0) then [(sensorX-rem) .. (sensorX+rem)]
+    else []
+
+let part1 input line =
+    let sensors = input |> Array.map parseLine
+    
+    let sensorsOnLine = 
+        sensors
+        |> Seq.collect (fun ((_, sensorY), (_, beaconY), _) -> [sensorY; beaconY])
+        |> Seq.where (fun y -> y = line)
+        |> Seq.distinct
+        |> Seq.length
+    
+    sensors
+    |> Seq.collect (getSizeOnLine line)
+    |> Seq.distinct
+    |> Seq.length
+    |> (fun x -> x - sensorsOnLine)
+
+part1 example 10
+
+#!fsharp
+
+part1 input 2000000
