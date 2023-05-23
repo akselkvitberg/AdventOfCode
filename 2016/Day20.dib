@@ -1,3 +1,7 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"}]}}
+
 #!fsharp
 
 #load "util.fsx"
@@ -18,22 +22,54 @@ input
 |> Seq.map parse
 |> Seq.sortBy fst
 |> Seq.skip 5
-|> Seq.take 20
+|> Seq.take 10
 
 #!fsharp
 
-let rec stuff (ptr1:int) (ptr2:int) tock (list:(uint*uint) list) =
-    let (start,_) = list[ptr1]
-    let (_,stop) = list[ptr2]
-    printfn $"{start} - {stop}"
-    if(tock && start > (stop + 2u)) then (stop + 1u)
-    else if start < stop
-        then stuff (ptr1 + 1) ptr2 false list
-        else stuff ptr1 (ptr2 + 1) true list
+let rec findFirstIpNotBlocked ipToCheck list = 
+    let range = list |> List.tryFind (fun (f,t) -> f <= ipToCheck && t >= ipToCheck)
+    match range with
+    | None -> Some ipToCheck
+    | Some (f,t) when t = UInt32.MaxValue -> None
+    | Some (f,t) -> findFirstIpNotBlocked (t + 1u) list
 
 input
 |> Seq.map parse
 |> Seq.sortBy fst
-|> Seq.take 30
 |> Seq.toList
-|> stuff 0 0 false
+|> findFirstIpNotBlocked 0u
+
+#!fsharp
+
+UInt32.MaxValue
+
+#!markdown
+
+#### part 2
+
+#!fsharp
+
+let rec findLastIpNotBlocked (ipToCheck:UInt32) (list:(UInt32*UInt32) list) =
+    list
+    |> List.tryFind (fun (f,_) -> f >= ipToCheck) 
+    |> Option.map (fst)
+
+let rec findRangeNotBlocked ipToCheck list =
+    let firstIpNotBlocked = findFirstIpNotBlocked ipToCheck list
+    let lastIpBlocked = Option.bind (fun ip -> findLastIpNotBlocked ip list) firstIpNotBlocked
+    
+    seq{
+        match firstIpNotBlocked, lastIpBlocked with 
+        | Some a, Some b -> 
+            yield (b - a) |> uint64
+            yield! findRangeNotBlocked (b) list
+        | _, _ -> ()
+    }
+    
+
+input
+|> Seq.map parse
+|> Seq.sortBy fst
+|> Seq.toList
+|> findRangeNotBlocked 0u
+|> Seq.sum
