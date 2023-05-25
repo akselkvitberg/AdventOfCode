@@ -1,0 +1,50 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 2
+input
+
+#!fsharp
+
+let parseLine line =
+    line
+    |> Split "\t"
+    |> Array.map int
+
+let parse input =
+    input
+    |> GetLines
+    |> Array.map parseLine
+
+parse input
+
+#!fsharp
+
+let checksum row =
+    let min = row |> Seq.min
+    let max = row |> Seq.max
+    max - min
+
+input
+|> parse
+|> Seq.map checksum
+|> Seq.sum
+
+#!fsharp
+
+let getEvenlyDivisable row =
+    row
+    |> Seq.collect (fun a -> row |> Seq.map (fun b -> (a,b)) |> Seq.where(fun (a,b) -> a <> b && a % b = 0))
+    |> Seq.map (fun (a,b) -> a/b)
+    |> Seq.sum
+
+input
+|> parse
+|> Seq.map getEvenlyDivisable
+|> Seq.sum
