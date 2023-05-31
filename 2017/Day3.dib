@@ -1,0 +1,41 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"},{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 3 |> int
+input
+
+#!fsharp
+
+/// Get the ring this number belongs to
+let getRing =
+    float 
+    >> sqrt
+    >> (+) -1.0
+    >> fun x -> x / 2.0
+    >> ceil
+    >> int
+
+let getPosition n =
+    let ring = getRing n // also distance from corner to middle point
+    let sideLength = 2 * ring + 1 // how far is it between each corner, including the corner 
+    let endN = sideLength * sideLength // last number in ring, bottom right
+
+    let period = ring * 2 // how far is it between each corner, excluding the corner
+    
+    let closestCorner = endN - ((endN - n) / period) * period // find the closest corner 
+    let toMiddle = abs (ring + n - closestCorner) // How far from the middle
+    let toCenter = ring
+
+    toMiddle + toCenter
+
+getPosition input
+
+#!fsharp
+
+// todo: part 2

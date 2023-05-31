@@ -1,0 +1,34 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 1
+input
+
+#!fsharp
+
+input
+|> fun i -> i + i[0].ToString()
+|> Seq.map (Char.GetNumericValue >> int)
+|> Seq.pairwise
+|> Seq.where (fun (a,b) -> a = b )
+|> Seq.map fst
+|> Seq.sum
+
+#!fsharp
+
+let numbers =
+    input.ToCharArray()
+    |> Array.map (Char.GetNumericValue >> int)
+let half = numbers.Length / 2
+
+numbers
+|> Seq.zip (numbers |> Seq.append (numbers |> Seq.skip half))
+|> Seq.where (fun (a,b) -> a = b )
+|> Seq.map fst
+|> Seq.sum
