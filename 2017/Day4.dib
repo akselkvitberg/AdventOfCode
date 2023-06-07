@@ -1,0 +1,38 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 4 |> GetLines
+input[0..4]
+
+#!fsharp
+
+let checkPassword wordProcessor password =
+    password 
+    |> Split " "
+    |> Seq.countBy wordProcessor
+    |> Seq.forall (fun (key,count) -> count = 1)
+
+checkPassword id input[0], checkPassword id input[4]
+
+#!fsharp
+
+input
+|> Seq.map (checkPassword id)
+|> Seq.where id
+|> Seq.length
+
+#!fsharp
+
+let sortLetters (word:string) =
+    word.ToCharArray() |> Array.sort |> String
+
+input
+|> Seq.map (checkPassword sortLetters)
+|> Seq.where id
+|> Seq.length
