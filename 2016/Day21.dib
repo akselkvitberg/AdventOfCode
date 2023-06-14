@@ -1,0 +1,175 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 21 |> GetLines
+input[..4]
+
+#!fsharp
+
+type Action =
+| SwapPosition of int*int
+| SwapLetter of char*char
+| RotateLeft of int
+| RotateRight of int
+| RotatePosition of char
+| ReversePositions of int*int
+| MovePosition of int*int
+
+#!fsharp
+
+let parse line =
+    match line with 
+    | Regex "swap position (\d+) with position (\d+)" [Int a; Int b] -> SwapPosition(a,b)
+    | Regex "swap letter (.) with letter (.)" [a;b] -> SwapLetter(a[0], b[0])
+    | Regex "rotate left (\d+) steps?" [Int b] -> RotateLeft(b)
+    | Regex "rotate right (\d+) steps?" [Int b] -> RotateRight(b)
+    | Regex "rotate based on position of letter (.)" [a] -> RotatePosition(a[0])
+    | Regex "reverse positions (\d+) through (\d+)" [Int a; Int b] -> ReversePositions(a,b)
+    | Regex "move position (\d+) to position (\d+)" [Int a; Int b] -> MovePosition(a,b)
+    | _ -> failwith line
+
+input
+|> Array.map parse
+|> Seq.take 3
+
+#!fsharp
+
+let swapPosition pos1 pos2 ciphertext = 
+    ciphertext
+    |> Array.mapi (fun i c -> 
+                    if i = pos1 then ciphertext[pos2]
+                    else if i = pos2 then ciphertext[pos1]
+                    else c
+                  )
+
+let swapLetter char1 char2 ciphertext =
+    ciphertext 
+    |> Array.map (fun c -> if c = char1 
+                           then char2 
+                           else if c = char2 
+                           then char1 else c
+                 )
+
+let rotateLeft steps (ciphertext:char array) =
+    [|0..ciphertext.Length-1|]
+    |> Array.map (fun i -> ciphertext[(i + steps) % ciphertext.Length])
+
+let rotateRight steps (ciphertext:char array) =
+    let steps = steps % ciphertext.Length
+    [|0..ciphertext.Length-1|]
+    |> Array.map (fun i -> ciphertext[(i + ciphertext.Length - steps) % ciphertext.Length])
+
+let rotatePosition char (ciphertext:char array) =
+    ciphertext
+    |> Seq.findIndex(fun c -> c = char) 
+    |> fun i -> 1 + i + (if (i >= 4) then 1 else 0) 
+    |> rotateRight
+    <| ciphertext
+
+let reversePositions pos1 pos2 (ciphertext:char array) =
+    ciphertext
+    |> Array.mapi (fun i c -> if(i >= pos1 && i <= pos2) 
+                              then ciphertext[pos2 - i + pos1] 
+                              else c)
+
+let movePosition pos1 pos2 (ciphertext:char array) =
+    ciphertext
+    |> Seq.removeAt pos1
+    |> Seq.insertAt pos2 ciphertext[pos1]
+    |> Seq.toArray
+
+let rec apply (ciphertext:char array) operation =
+    match operation with
+    | SwapPosition (pos1,pos2) -> swapPosition pos1 pos2
+    | SwapLetter (char1,char2) -> swapLetter char1 char2
+    | RotateLeft (steps) -> rotateLeft steps
+    | RotateRight (steps) -> rotateRight steps
+    | RotatePosition (char1) -> rotatePosition char1
+    | ReversePositions (pos1,pos2) -> reversePositions pos1 pos2
+    | MovePosition (pos1,pos2) -> movePosition pos1 pos2
+    <| ciphertext
+
+[
+    SwapPosition(4, 0)
+    SwapLetter('d', 'b')
+    ReversePositions(0, 4)
+    RotateLeft 1
+    MovePosition (1, 4)
+    MovePosition (3, 0)
+    RotatePosition 'b'
+    RotatePosition 'd'
+]
+|> List.scan apply ("abcde".ToCharArray())
+|> List.map String
+
+#!fsharp
+
+// part 1
+input
+|> Array.map parse
+|> Seq.fold apply ("abcdefgh".ToCharArray())
+|> String
+
+#!fsharp
+
+let unRotatePosition char (ciphertext:char array) =
+    let index = ciphertext |> Seq.findIndex(fun c -> c = char)
+    // this function only works with 8 chars
+    match index with 
+    | 1 -> 1
+    | 3 -> 2
+    | 5 -> 3
+    | 7 -> 4
+    | 2 -> 6
+    | 4 -> 7
+    | 6 -> 8
+    | 0 -> 9
+    |> RotateLeft
+    |> apply ciphertext
+    
+let rec unapply (ciphertext:char array) operation =
+    match operation with
+    | SwapPosition (pos1,pos2) -> swapPosition pos1 pos2
+    | SwapLetter (char1,char2) -> swapLetter char1 char2
+    | RotateLeft (steps) -> rotateRight steps
+    | RotateRight (steps) -> rotateLeft steps
+    | RotatePosition (char1) -> unRotatePosition char1
+    | ReversePositions (pos1,pos2) -> reversePositions pos1 pos2
+    | MovePosition (pos1,pos2) -> movePosition pos2 pos1
+    <| ciphertext
+
+[
+    SwapPosition(4, 0)
+    SwapLetter('d', 'b')
+    ReversePositions(0, 4)
+    RotateLeft 1
+    MovePosition (1, 4)
+    MovePosition (3, 0)
+    RotatePosition 'b'
+    RotatePosition 'd'
+]
+|> Seq.rev
+|> Seq.scan unapply ("decab".ToCharArray())
+|> Seq.map String
+
+#!fsharp
+
+// Compare with sequence from test 1
+[ "abcde"; "ebcda"; "edcba"; "abcde"; "bcdea"; "bdeac"; "abdec"; "ecabd"; "decab" ]
+|> Seq.rev
+|> Seq.map string
+
+#!fsharp
+
+// part 2
+input
+|> Array.map parse
+|> Seq.rev
+|> Seq.fold unapply ("fbgdceah".ToCharArray())
+|> String
