@@ -1,0 +1,52 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"},{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 6 |> Split "\t" |> Array.map int
+input
+
+#!fsharp
+
+let distribute bankCount blocksToDistribute start i v =
+        let virtualPosition = if i <= start then bankCount + i else i // positions from 0 -> maxI are mapped to numBanks + position
+        let maxPosition = (start + (blocksToDistribute % bankCount))
+        let doesOverlap = virtualPosition <= maxPosition
+        let initialBlocks = if i = start then 0 else v
+        initialBlocks + (blocksToDistribute / bankCount) + (if doesOverlap then 1 else 0)
+
+let bankCount = 10
+let blocksToDistribute = 13
+let start = 0
+let banks = Array.init bankCount (fun i -> 0)
+
+banks |> Array.mapi (distribute bankCount blocksToDistribute start)
+
+#!fsharp
+
+let redistribute banks =
+    let rec Solve knownStates count banks =
+        if (Map.containsKey banks knownStates) then (knownStates, count, banks)
+        else
+            let maxV = Array.max banks
+            let maxI = Array.findIndex ((=) maxV) banks
+            let knownStates' = Map.add banks count knownStates
+            let newBanks = Array.mapi (distribute (Seq.length banks) maxV maxI) banks
+            Solve knownStates' (count + 1) newBanks
+        
+    Solve Map.empty 0 banks
+
+redistribute [| 0; 2; 7; 0 |]
+
+#!fsharp
+
+let (states, count, cyclicState) = redistribute input
+count
+
+#!fsharp
+
+count - Map.find cyclicState states
