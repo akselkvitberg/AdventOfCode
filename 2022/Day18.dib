@@ -1,0 +1,117 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"},{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 18 |> GetLines
+input[0..3]
+
+#!fsharp
+
+let example = 
+    [|
+        "2,2,2"
+        "1,2,2"
+        "3,2,2"
+        "2,1,2"
+        "2,3,2"
+        "2,2,1"
+        "2,2,3"
+        "2,2,4"
+        "2,2,6"
+        "1,2,5"
+        "3,2,5"
+        "2,1,5"
+        "2,3,5"
+    |]
+
+#!fsharp
+
+let parse line =
+    match (line |> Split ",") with
+    | [|Int a;Int b;Int c|] -> a,b,c
+    | _ -> failwith "Uknown line"
+
+let exampleData = example |> Array.map parse |> Set
+let inputData = input |> Array.map parse |> Set
+
+#!fsharp
+
+let getNeighbours (x,y,z) =
+    [|
+        (x+1,y,z)
+        (x,y+1,z)
+        (x,y,z+1)
+        (x-1,y,z)
+        (x,y-1,z)
+        (x,y,z-1)
+    |]
+
+getNeighbours (0,0,0)
+
+#!fsharp
+
+let countFaces data = 
+    data
+    |> Set.toArray
+    |> Array.collect (fun a -> getNeighbours a |> Array.filter (fun x -> data.Contains (x) |> not))
+    |> Array.length
+
+countFaces exampleData
+
+#!fsharp
+
+countFaces inputData
+
+#!fsharp
+
+let GetBounds cubes = 
+    let minX = cubes |> Seq.map (fun (x,_,_) -> x ) |> Seq.min
+    let minY = cubes |> Seq.map (fun (_,y,_) -> y ) |> Seq.min
+    let minZ = cubes |> Seq.map (fun (_,_,z) -> z ) |> Seq.min
+    let maxX = cubes |> Seq.map (fun (x,_,_) -> x ) |> Seq.max
+    let maxY = cubes |> Seq.map (fun (_,y,_) -> y ) |> Seq.max
+    let maxZ = cubes |> Seq.map (fun (_,_,z) -> z ) |> Seq.max
+
+    (minX-1, minY-1, minZ-1, maxX+1, maxY+1, maxZ+1)
+
+#!fsharp
+
+let findArea cubes =
+    let (minX, minY, minZ, maxX, maxY, maxZ) = GetBounds cubes
+
+    let outOfBounds (x,y,z) =
+        (x < minX || x > maxX)
+        || (y < minY || y > maxY)
+        || (z < minZ || z > maxZ)
+    
+    let rec floodFill toCheck (filled:Set<(int*int*int)>) =
+        match toCheck with
+        | [] -> filled
+        | x::xs when outOfBounds x -> floodFill xs filled
+        | x::xs ->
+            getNeighbours x
+            |> Array.filter (fun p -> Set.contains p filled |> not)
+            |> Array.toList
+            |> fun neighbours -> floodFill (neighbours @ xs) (Set.add x filled)
+
+    let flood = floodFill [(minX, minY, minZ)] cubes
+
+    let steam = Set.difference flood cubes
+
+    let neighbours =
+        cubes
+        |> Set.toArray
+        |> Array.collect (fun a -> getNeighbours a |> Array.filter (fun x -> steam.Contains (x)))
+
+    neighbours |> Array.length
+
+findArea exampleData
+
+#!fsharp
+
+findArea inputData
