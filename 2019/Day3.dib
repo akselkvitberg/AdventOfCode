@@ -1,0 +1,72 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 3 |> GetLines
+input
+
+#!fsharp
+
+let parsePath (path:string) = 
+    match path[0], path[1..] with
+    | 'R', r -> [1..(int r)] |> List.map (fun x -> x,0)
+    | 'L', l -> [-1..(-1)..(-(int l))] |> List.map (fun x -> x,0)
+    | 'U', l -> [-1..(-1)..(-(int l))] |> List.map (fun y -> 0,y)
+    | 'D', r -> [1..(int r)] |> List.map (fun y -> 0,y)
+
+#!fsharp
+
+let getWirePath (path:string) = 
+    let rec traverse (x,y) points (path:string list) = 
+        match path with
+        | [] -> points
+        | l::ls -> 
+            let points' = parsePath l |> List.map (fun (x',y') -> x+x', y+y')
+            let nextPos = points' |> List.last
+            let set = List.append points points'
+            traverse nextPos set ls
+
+    path
+    |> Split ","
+    |> Array.toList
+    |> traverse (0,0) []
+
+getWirePath "U7,R6,D4,L4"
+
+#!fsharp
+
+let getMinDistance (input:string array) =
+    let path1 = getWirePath input[0] |> Set.ofList
+    let path2 = getWirePath input[1] |> Set.ofList
+    Set.intersect path1 path2 
+    |> Seq.map (fun (x,y) -> abs x, abs y)
+    |> Seq.map (fun (x,y) -> x+y)
+    |> Seq.min
+
+getMinDistance input
+
+#!fsharp
+
+let getMinIntersectionPath (inputs:string array) =
+    let path1 = getWirePath inputs[0] |> List.toArray
+    let path2 = getWirePath inputs[1] |> List.toArray
+    let intersections = Set.intersect (Set.ofArray path1) (Set.ofArray path2)
+
+    let getDistanceToIntersection path (intersection:int*int) =
+        Array.IndexOf(path,intersection) + 1
+
+    intersections
+    |> Seq.map (fun intersection -> getDistanceToIntersection path1 intersection, getDistanceToIntersection path2 intersection)
+    |> Seq.map (fun (x,y) -> abs x + abs y)
+    |> Seq.min
+
+getMinIntersectionPath [|"R8,U5,L5,D3"; "U7,R6,D4,L4"|]
+
+#!fsharp
+
+getMinIntersectionPath input
