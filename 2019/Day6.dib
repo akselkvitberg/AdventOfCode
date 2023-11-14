@@ -1,0 +1,107 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"},{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 6 |> GetLines
+input[..3]
+
+#!fsharp
+
+let example = 
+    """
+COM)B
+B)C
+C)D
+D)E
+E)F
+B)G
+G)H
+D)I
+E)J
+J)K
+K)L
+"""
+    |> GetLines
+example
+
+#!fsharp
+
+let parse object =
+    match object with 
+    | Regex "(.+)\)(.+)" [a;b;] -> a,b
+    | _ -> failwith object
+
+example |> Array.map parse
+
+#!fsharp
+
+let getOrbitMap (orbits:(string*string) array) =
+    let parents = orbits |> Seq.map (fun (x,y) -> y,x) |> Map.ofSeq
+    let objects = orbits |> Array.groupBy fst |> Map.ofSeq |> Map.map (fun items -> Array.map snd)
+
+    let rec buildList map id = 
+        let parent = parents[id]
+        let children = objects |> Map.tryFind id |> Option.defaultValue [||]
+        let list = map |> Map.tryFind parent
+        match list with 
+        | Some list -> 
+            let map' = map |> Map.add id (id::list)
+            children |> Array.fold buildList map'
+        | _ -> failwith parent
+    
+    buildList (["COM", []] |> Map.ofList) (objects["COM"] |> Seq.head)
+    
+example
+|> Array.map parse
+|> getOrbitMap
+
+#!fsharp
+
+let getOrbitCount orbitMap = 
+    orbitMap
+    |> Map.values
+    |> Seq.collect id
+    |> Seq.length
+
+example
+|> Array.map parse
+|> getOrbitMap
+|> getOrbitCount
+
+#!fsharp
+
+input
+|> Array.map parse
+|> getOrbitMap
+|> getOrbitCount
+
+#!fsharp
+
+let findOrbitToSanta orbitMap = 
+    let you = orbitMap |> Map.find "YOU" |> List.tail |> List.rev
+    let san = orbitMap |> Map.find "SAN" |> List.tail |> List.rev
+
+    let rec findSharedOrbit you san = 
+        match you, san with 
+        | y::you, s::san when y = s -> findSharedOrbit you san
+        | you, san -> List.append you san |> List.length
+    
+    findSharedOrbit you san
+
+example
+|> Array.append [| "K)YOU"; "I)SAN"|]
+|> Array.map parse
+|> getOrbitMap
+|> findOrbitToSanta
+
+#!fsharp
+
+input
+|> Array.map parse
+|> getOrbitMap
+|> findOrbitToSanta
