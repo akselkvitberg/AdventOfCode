@@ -4,6 +4,9 @@
 
 #!fsharp
 
+#load "util.fsx"
+open Utils
+
 let input = GetData 17
 input
 
