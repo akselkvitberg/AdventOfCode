@@ -1,0 +1,96 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"},{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 2 |> GetLines
+
+sprintf "%A" input[..3]
+
+#!fsharp
+
+let example = GetLines """
+Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
+Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
+Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
+Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
+Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green
+""" 
+
+#!fsharp
+
+type Reveal = {
+    Red: int
+    Blue: int
+    Green: int
+}
+
+let parseCount reveal item =
+    match item with 
+    | Regex "(\d+) blue" [Int count] -> { reveal with Blue = count}
+    | Regex "(\d+) red" [Int count] -> { reveal with Red = count}
+    | Regex "(\d+) green" [Int count] -> {reveal with Green = count}
+
+let parseReveal (game:string) =
+    game.Split(",", StringSplitOptions.TrimEntries)
+    |> Array.fold (fun reveal item -> parseCount reveal item) {Red=0;Blue=0;Green=0}
+
+let parseLine (line:string) = 
+    let [|gameId; games|] = line.Split(":", StringSplitOptions.TrimEntries)
+    let id = gameId[5..] |> int
+    id, games.Split(";", StringSplitOptions.TrimEntries) |> Array.map parseReveal
+
+example |> Array.map parseLine
+
+#!fsharp
+
+let reds = 12
+let greens = 13
+let blues = 14
+
+let isPossibleReveal reveal =
+    reveal.Red <= reds && reveal.Green <= greens && reveal.Blue <= blues
+
+let isPossibleGame game =
+    game |> Array.forall isPossibleReveal
+
+
+let checkPossibleGames games = 
+    games 
+    |> Array.filter (fun (id, game) -> isPossibleGame game)
+    
+example
+|> Array.map parseLine
+|> checkPossibleGames
+|> Array.sumBy fst
+
+#!fsharp
+
+input
+|> Array.map parseLine
+|> checkPossibleGames
+|> Array.sumBy fst
+
+#!fsharp
+
+let getMinimumNumberOfCubes game =
+    let red = game |> Array.map (fun x -> x.Red)     |> Array.max
+    let blue = game |> Array.map (fun x -> x.Blue)   |> Array.max
+    let green = game |> Array.map (fun x -> x.Green) |> Array.max
+    red * blue * green
+
+example
+|> Array.map parseLine
+|> Array.map (fun (id,game) -> getMinimumNumberOfCubes game)
+|> Array.sum
+
+#!fsharp
+
+input
+|> Array.map parseLine
+|> Array.map (fun (id,game) -> getMinimumNumberOfCubes game)
+|> Array.sum
