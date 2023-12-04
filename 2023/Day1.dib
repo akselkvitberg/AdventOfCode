@@ -63,10 +63,11 @@ let parseNumber =
     | _ -> failwith "not a number"
 
 let parseWords line =
-    let captureGroup = ""
+    let captureGroup = "(one|two|three|four|five|six|seven|eight|nine|\d)"
+    let regex = $"{captureGroup}.*{captureGroup}"
     match line with
-    | Regex "(one|two|three|four|five|six|seven|eight|nine|\d).*(one|two|three|four|five|six|seven|eight|nine|\d)" [a; b] -> (parseNumber a, parseNumber b) |> fun (a, b) -> a * 10 + b
-    | Regex "(one|two|three|four|five|six|seven|eight|nine|\d)" [a] -> parseNumber a |> fun a -> a * 10 + a
+    | Regex regex [a; b] -> (parseNumber a, parseNumber b) |> fun (a, b) -> a * 10 + b
+    | Regex captureGroup [a] -> parseNumber a |> fun a -> a * 10 + a
     | _ -> failwith "No number"
 
 example2 |> Array.map parseWords

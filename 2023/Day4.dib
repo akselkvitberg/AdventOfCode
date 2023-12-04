@@ -1,0 +1,84 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 4 |> GetLines
+input[0]
+
+#!fsharp
+
+let example = GetLines """
+Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53
+Card 2: 13 32 20 16 61 | 61 30 68 82 17 32 24 19
+Card 3:  1 21 53 59 44 | 69 82 63 72 16 21 14  1
+Card 4: 41 92 73 84 69 | 59 84 76 51 58  5 54 83
+Card 5: 87 83 26 28 32 | 88 30 70 12 93 22 82 36
+Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11
+"""
+
+#!fsharp
+
+type Card = {
+    Id: int
+    WinningNumbers: int array
+    PickedNumbers: int array
+}
+
+let (|IntArray|) list = 
+    list |> Split " " |> Array.map int
+
+let parse card =
+    match card with
+    | Regex "Card\s+(\d+): (.+) \| (.+)" [Int id; IntArray winningNumbers; IntArray pickedNumbers] -> { Id = id; WinningNumbers = winningNumbers; PickedNumbers = pickedNumbers }
+    | _ -> failwith card
+
+parse input[0]
+
+#!fsharp
+
+let getWins card = 
+    card.PickedNumbers
+    |> Array.where (fun x -> card.WinningNumbers |> Array.contains x)
+    |> Array.length
+
+let getScore input =
+    input
+    |> Array.map parse
+    |> Array.map getWins
+    |> Array.map (fun wins -> 2.0 ** float(wins-1) |> floor)
+    |> Array.sum
+
+getScore example
+
+#!fsharp
+
+getScore input
+
+#!fsharp
+
+let getResultingCards input = 
+    let cards = input |> Array.map parse |> Array.map (fun card -> card.Id, getWins card |> fun wins -> [card.Id+1..card.Id + wins]) |> Map.ofArray
+    let cardCount = cards |> Map.map (fun x y -> 1)
+
+    let rec getCardCount (cardCount: Map<int, int>) id =
+        let cardCount = 
+            cards[id] 
+            |> List.fold (fun map i -> 
+                Map.change i (fun old -> Some (old.Value + cardCount[id])) map) cardCount
+        let newId = id + 1
+        if cardCount.ContainsKey(newId) then getCardCount cardCount newId
+        else cardCount
+    
+    let cardCount = getCardCount cardCount 1
+    cardCount |> Seq.sumBy (fun x -> x.Value)
+
+getResultingCards example
+
+#!fsharp
+
+getResultingCards input
