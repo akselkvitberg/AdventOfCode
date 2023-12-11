@@ -1,0 +1,118 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"},{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 5
+
+sprintf "%A" input[..3]
+
+#!fsharp
+
+let example = GetExample 5
+
+#!fsharp
+
+type ItemMap = {
+    Destination: int64
+    Source: int64
+    Length: int64
+}
+
+let parseMap line =
+    match line with
+    | Regex "(\d+) (\d+) (\d+)" [Long dest; Long source; Long length ] -> {Destination = dest; Source = source; Length = length}
+    | _ -> failwith line
+
+let parseMaps section =
+    section
+    |> GetLines
+    |> Array.skip 1
+    |> Array.map parseMap
+
+let parse input =
+    let parts = input |> Split "\n\n"
+
+    let seeds = match parts[0] with | Regex "seeds: (.+)" [LongArray seeds] -> seeds
+
+    let mappings = 
+        parts 
+        |> Array.skip 1
+        |> Array.map parseMaps
+
+    seeds, mappings
+
+let exampleSeeds, exampleMappings = parse example
+
+#!fsharp
+
+let getDestination (mappings: ItemMap array) source =
+    match mappings |> Array.tryFind (fun m -> m.Source <= source && m.Source + m.Length > source) with
+    | None -> source
+    | Some mapping -> mapping.Destination + (source - mapping.Source)
+
+getDestination exampleMappings[0] 99
+
+#!fsharp
+
+let getLocationOfSeed (mappings: ItemMap array array) seed =
+    mappings
+    |> Array.fold (fun acc i -> getDestination i acc) seed
+
+getLocationOfSeed exampleMappings 79
+
+#!fsharp
+
+let getLowestLocationNumber mappings (seeds:int64 array) =
+    seeds
+    |> Array.map (fun seed -> getLocationOfSeed mappings seed)
+    |> Array.min
+
+getLowestLocationNumber exampleMappings exampleSeeds
+
+#!fsharp
+
+let inputSeeds, inputMappings = parse input
+
+getLowestLocationNumber inputMappings inputSeeds
+
+#!markdown
+
+For part 2, let's try reversing the process
+
+#!fsharp
+
+let getSource (mappings: ItemMap array) destination =
+    match mappings |> Array.tryFind (fun m -> m.Destination <= destination && m.Destination + m.Length > destination) with
+    | None -> destination
+    | Some mapping -> mapping.Source + (destination - mapping.Destination)
+
+let getSeedOfLocation (mappings: ItemMap array array) location =
+    mappings
+    |> Array.fold (fun acc i -> getSource i acc) location
+
+getLocationOfSeed exampleMappings 79
+
+#!fsharp
+
+let getLowestLocationNumberWithRange mappings (seeds: int64 array) =
+    let reverseMappings = mappings |> Array.rev
+
+    let pairs = seeds |> Array.chunkBySize 2 |> Array.map (fun chunk -> chunk[0], chunk[1])
+
+    let isSeed seed = pairs |> Array.exists (fun (from,length) -> seed >= from && seed < from+length)
+
+    Seq.initInfinite ((+) 1)
+    |> Seq.map (fun seed -> getSeedOfLocation reverseMappings (int64 seed))
+    |> Seq.findIndex (isSeed)
+    |> (+) 1
+
+getLowestLocationNumberWithRange exampleMappings exampleSeeds
+
+#!fsharp
+
+getLowestLocationNumberWithRange inputMappings inputSeeds

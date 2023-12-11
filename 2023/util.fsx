@@ -32,6 +32,15 @@ let GetData day =
 
         trimmedstr
 
+let GetExample day =
+    let file = $"Examples/{day}.txt"
+    if File.Exists file then
+        File.ReadAllText file
+    else
+        Directory.CreateDirectory("Examples") |> ignore
+        File.Create(file) |> ignore
+        ""
+
 let Split (character:string) (input:string) = input.Split(character, StringSplitOptions.RemoveEmptyEntries)
 
 let GetLines (input:string)  = input.Trim().Split([|"\n"; "\r\n" |], StringSplitOptions.RemoveEmptyEntries)
@@ -48,6 +57,12 @@ let (|Int|_|) (str:string) = match Int32.TryParse str with true, value -> Some v
 let (|UInt|_|) (str:string) = match UInt32.TryParse str with true, value -> Some value | _ -> None
 let (|Long|_|) (str:string) = match Int64.TryParse str with true, value -> Some value | _ -> None
 let (|ULong|_|) (str:string) = match UInt64.TryParse str with true, value -> Some value | _ -> None
+
+let (|IntArray|) list = 
+    list |> Split " " |> Array.map int
+
+let (|LongArray|) list = 
+    list |> Split " " |> Array.map int64
 
 let RegexReplace pattern (replacement:string) input =
     let regex = new Regex(pattern)
