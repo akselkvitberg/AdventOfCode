@@ -13,7 +13,7 @@ sprintf "%A" input[..3]
 
 #!fsharp
 
-let example = GetExample 5
+let example = GetExample 5 1
 
 #!fsharp
 
