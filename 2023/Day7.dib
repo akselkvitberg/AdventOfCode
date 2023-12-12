@@ -1,0 +1,107 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 7
+
+#!fsharp
+
+let example = GetExample 7 1
+example
+
+#!fsharp
+
+type Card = 
+| A = 14 
+| K = 13
+| Q = 12
+| J = 11
+| T = 10
+
+type Hand = Card list
+
+type Pairing =
+| FiveOfAKind
+| FourOfAKind
+| FullHouse
+| ThreeOfAKind
+| TwoPair
+| OnePair
+| HighCard
+
+#!fsharp
+
+let parseCard (card: char) =
+    match card with
+    | 'A' -> Card.A
+    | 'K' -> Card.K
+    | 'Q' -> Card.Q
+    | 'J' -> Card.J
+    | 'T' -> Card.T
+    | c -> enum<Card> (int (string c))
+
+parseCard 'A', parseCard '9'
+
+#!fsharp
+
+let parseHand hand =
+    match hand with
+    | Regex "(.....) (\d+)" [cards; Int bid] -> 
+        let hand = cards |> Seq.map parseCard |> Seq.toList
+        hand, bid
+    | _ -> failwith $"Bad hand: {hand}"
+
+let parse input =
+    input
+    |> GetLines
+    |> Array.map parse
+
+parse example
+
+#!fsharp
+
+let getPairing (hand:Hand) =
+    match hand |> List.countBy id |> List.map snd |> List.sortDescending with
+    | 5 :: _ -> FiveOfAKind
+    | 4 :: _ -> FourOfAKind
+    | 3 :: 2 :: _ -> FullHouse
+    | 3 :: _ -> ThreeOfAKind
+    | 2 :: 2 :: _ -> TwoPair
+    | 2 :: _ -> OnePair
+    | 1 :: _ -> HighCard
+    | _ -> failwith "How can you get something else?"
+
+parse example
+|> Array.sortBy (fst >> getPairing)
+
+#!fsharp
+
+let compareHands (handA:Hand, _) (handB:Hand, _) =
+    
+    let rec compare a b =
+        match a,b with
+        | a1::ax, b1::bx when a1 = b1 -> compare ax bx
+        | a1::ax, b1::bx when a1 < b1 -> -1
+        | _ -> 1
+
+    compare handA handB
+
+let getWinnings input =
+    input
+    |> parse
+    |> Seq.sortWith (compareHands)
+    |> Seq.sortByDescending (fst >> getPairing)
+    |> Seq.map snd
+    |> Seq.mapi (fun i x -> (i+1) * x)
+    |> Seq.sum
+
+getWinnings example
+
+#!fsharp
+
+getWinnings input
