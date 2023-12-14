@@ -1,0 +1,71 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"},{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 8
+
+#!fsharp
+
+let example1 = GetExample 8 1
+let example2 = GetExample 8 2
+example1
+
+#!fsharp
+
+type Direction = | R | L
+
+let parseNode = function Regex "(...) = \((...), (...)" [nodeId; left; right] -> nodeId, (left, right)
+
+let parse input = 
+    let [|instructions; nodes|] = input |> GetBlocks 
+
+    let instructions = instructions |> Seq.map (function | 'R' -> R | 'L' -> L) |> Seq.toArray
+    let nodes = nodes |> GetLines |> Array.map parseNode |> Map.ofArray
+
+    instructions, nodes
+
+parse example1
+
+#!fsharp
+
+let repeatInstructions (instructions: Direction array) = 
+    Seq.initInfinite (fun i -> instructions[i % instructions.Length])
+
+repeatInstructions [|R;L;L;L;R|] |> Seq.take 10 |> Seq.toArray |> printfn "%A"
+
+#!fsharp
+
+let getSteps input =
+
+    let instructions, nodes = parse input
+
+    instructions
+    |> repeatInstructions
+    |> Seq.scan (fun agg i -> 
+        let (left, right) = nodes[agg] 
+        match i with
+        | L -> left
+        | R -> right
+    ) "AAA"
+
+let getInstructionCountToReachZZZ input =
+    getSteps input
+    |> Seq.takeWhile (fun x -> x <> "ZZZ")
+    |> Seq.truncate 1000000
+    |> Seq.length
+
+getInstructionCountToReachZZZ example1
+
+#!fsharp
+
+getInstructionCountToReachZZZ input
+
+#!fsharp
+
+let example3 = GetExample 8 3
+example3
