@@ -40,10 +40,7 @@ repeatInstructions [|R;L;L;L;R|] |> Seq.take 10 |> Seq.toArray |> printfn "%A"
 
 #!fsharp
 
-let getSteps input =
-
-    let instructions, nodes = parse input
-
+let getSteps instructions (nodes:Map<string, string*string>) startNode =
     instructions
     |> repeatInstructions
     |> Seq.scan (fun agg i -> 
@@ -51,21 +48,55 @@ let getSteps input =
         match i with
         | L -> left
         | R -> right
-    ) "AAA"
+    ) startNode
 
-let getInstructionCountToReachZZZ input =
-    getSteps input
-    |> Seq.takeWhile (fun x -> x <> "ZZZ")
+let getInstructionCountFromTo from ``to`` input =
+    let instructions, nodes = parse input
+    getSteps instructions nodes from
+    |> Seq.takeWhile (fun x -> x <> ``to``)
     |> Seq.truncate 1000000
     |> Seq.length
 
-getInstructionCountToReachZZZ example1
+getInstructionCountFromTo "AAA" "ZZZ" example1
 
 #!fsharp
 
-getInstructionCountToReachZZZ input
+getInstructionCountFromTo "AAA" "ZZZ" input
 
 #!fsharp
 
 let example3 = GetExample 8 3
 example3
+
+#!fsharp
+
+let rec gcd (a:int64) (b:int64) =
+    if b = 0 then abs a
+    else gcd b (a % b)
+
+let lcm (a:int64) (b:int64) = (abs a * abs b) / gcd a b
+
+#!fsharp
+
+let getAllStartNodes (nodes:Map<string, string*string>) =
+    nodes |> Map.keys |> Seq.where (fun id -> id.EndsWith("A"))
+
+let getPeriodOfStartingNode instructions nodes from =
+    getSteps instructions nodes from
+    |> Seq.takeWhile (fun x -> x.EndsWith("Z") |> not)
+    |> Seq.length
+
+let traverseAllNodesAtOnce input =
+    let instructions, nodes = parse input
+    let startNodes = getAllStartNodes nodes
+    
+    startNodes
+    |> Seq.map (getPeriodOfStartingNode instructions nodes)
+    |> Seq.map int64 // stupid large numbers
+    |> Seq.reduce lcm
+
+traverseAllNodesAtOnce example3
+
+#!fsharp
+
+traverseAllNodesAtOnce input
