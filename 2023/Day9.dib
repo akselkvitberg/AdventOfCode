@@ -1,0 +1,72 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 9
+
+#!fsharp
+
+let example = GetExample 9 1
+example
+
+#!fsharp
+
+let parse input = input |> GetLines |> Array.map (Split " " >> Array.map int)
+parse example
+
+#!fsharp
+
+let getDiff values =
+    if(Seq.forall ((=) 0) values) then None
+    else Some (
+        values,
+        values
+        |> Seq.pairwise
+        |> Seq.map (fun (a,b) -> b - a)
+        |> Seq.toArray
+    )
+
+let interpolate values =
+    values |> Array.unfold (fun agg -> getDiff agg)
+
+example |> parse |> fun x -> interpolate x[2]
+
+#!fsharp
+
+type Direction = Forwards | Backwards
+let extrapolateValues direction valueValues = 
+    let valueSelector, extrapolationFunction = match direction with Forwards -> Array.last, (fun agg i -> i + agg) | _ -> Array.head, (fun agg i -> i - agg)
+    valueValues
+    |> Array.map valueSelector
+    |> Array.rev
+    |> Array.reduce extrapolationFunction
+
+example |> parse |> fun x -> interpolate x[2] |> extrapolateValues Forwards
+
+#!fsharp
+
+let extrapolate direction input =
+    input
+    |> parse
+    |> Seq.map interpolate
+    |> Seq.map (extrapolateValues direction)
+    |> Seq.sum
+
+extrapolate Forwards example
+
+#!fsharp
+
+extrapolate Forwards input
+
+#!fsharp
+
+extrapolate Backwards example
+
+#!fsharp
+
+extrapolate Backwards input
