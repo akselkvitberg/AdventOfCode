@@ -1,0 +1,176 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"},{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 10
+
+#!fsharp
+
+let example id = GetExample 10 id
+example 3
+
+#!fsharp
+
+type Connection = N | S | E | W
+
+#!fsharp
+
+let parseSymbol v = 
+    match v with 
+    | '|' -> Some [N;S]
+    | '-' -> Some [E;W]
+    | 'L' -> Some [N;E]
+    | 'J' -> Some [N;W]
+    | '7' -> Some [S;W]
+    | 'F' -> Some [S;E]
+    | 'S' -> Some [N;S;E;W]
+    | _ -> None
+
+let parse input = 
+    input
+    |> GetLines
+    |> Seq.map (Seq.indexed) |> Seq.indexed
+    |> Seq.collect (fun (y, row) -> row |> Seq.choose (fun (x, v) -> parseSymbol v |> Option.map (fun pipe -> (x,y), pipe)))
+    |> Map.ofSeq
+
+example 5, parse (example 5) |> sprintf "%A"
+
+#!fsharp
+
+let drawPipes visited nodes = 
+    let xMax = nodes |> Map.keys |> Seq.map fst |> Seq.max
+    let yMax = nodes |> Map.keys |> Seq.map fst |> Seq.max
+
+    [
+        for y in [0..yMax] do
+        [|
+            for x in [0..xMax] do
+            match List.contains (x,y) visited, nodes |> Map.tryFind (x,y) with
+            | true, Some [N;S] -> '┃'
+            | true, Some [E;W] -> '━'
+            | true, Some [N;E] -> '┗'
+            | true, Some [N;W] -> '┛'
+            | true, Some [S;W] -> '┓'
+            | true, Some [S;E] -> '┏'
+            | true, Some [N;S;E;W] -> '╋'
+            | false, Some [N;S] -> '│'
+            | false, Some [E;W] -> '─'
+            | false, Some [N;E] -> '└'
+            | false, Some [N;W] -> '┘'
+            | false, Some [S;W] -> '┐'
+            | false, Some [S;E] -> '┌'
+            | false, Some [N;S;E;W] -> '┼'
+            | _ -> ' '
+        |] 
+        |> String
+    ] |> fun x -> String.Join("\n", x)
+
+example 3 |> parse |> drawPipes [(1,1);(1,2);(1,3);2,3; 3,3; 3,2; 3,1; 2,1]
+
+#!fsharp
+
+let getNeighbours point pipes =
+
+    let getConnections point = pipes |> Map.tryFind point |> Option.defaultValue []
+
+    let getNeighbourAndRequiredConnection direction =
+        let x, y = point
+        match direction with
+        | N -> S, (x, y-1)
+        | S -> N, (x, y+1)
+        | E -> W, (x+1, y)
+        | W -> E, (x-1, y)
+
+    let isValidConnection connection neighbourCoords =
+        match pipes |> Map.tryFind neighbourCoords with
+        | Some neighbour when List.contains connection neighbour -> Some neighbourCoords
+        | _ -> None
+
+    getConnections point
+    |> List.map getNeighbourAndRequiredConnection
+    |> List.choose (fun (connection, neighbour) -> isValidConnection connection neighbour)
+
+example 5 |> parse |> getNeighbours (0,2)
+
+#!fsharp
+
+open System.Collections.Generic
+
+let depthFirst start nodes =
+    let getNeighbour point = getNeighbours point nodes
+
+    let stack = Stack<_>()
+    let visited = HashSet<_>()
+
+    stack.Push(start)
+
+    while stack.Count > 0 do
+        let node = stack.Pop()
+        if not (visited.Contains(node)) then
+            visited.Add(node) |> ignore
+            let neighbours = getNeighbour node
+            for neighbour in neighbours do
+                stack.Push(neighbour) |> ignore
+
+    visited |> Seq.toList
+
+example 5 |> parse |> drawPipes [] |> printfn "%s"
+example 5 |> parse |> depthFirst (1,1)
+
+#!fsharp
+
+let getLargestDistance input = 
+    let nodes = parse input
+    let start = nodes |> Map.findKey (fun x v -> v |> List.length = 4 )
+    
+    let graph = depthFirst start nodes
+
+    drawPipes graph nodes
+    |> printfn "%s"
+
+    graph.Length / 2
+
+example 5 |> getLargestDistance
+
+#!fsharp
+
+input |> getLargestDistance
+
+#!fsharp
+
+// does not work yet
+let getNodesInEnclosure input = 
+    let nodes = parse input
+    let start = nodes |> Map.findKey (fun x v -> v |> List.length = 4 )
+    let graph = depthFirst start nodes
+
+    let xMax = graph |> Seq.map fst |> Seq.max
+    let yMax = graph |> Seq.map snd |> Seq.max
+    
+    let isWithinLoop x y = 
+        if not (List.contains (x,y) graph) then
+            [0..x] |> Seq.where (fun x' -> graph |> List.contains (x',y)) |> Seq.length |> fun l -> l % 2 = 1
+        else false
+
+    [
+        for y in [0..yMax+1] do
+        for x in [0..xMax+1] do
+        isWithinLoop x y
+    ]
+    |> List.where id
+    |> List.length
+
+example 10 |> getNodesInEnclosure
+
+#!fsharp
+
+example 15 |> getNodesInEnclosure
+
+#!fsharp
+
+input |> getNodesInEnclosure
