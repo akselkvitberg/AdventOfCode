@@ -1,0 +1,131 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"},{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 12
+
+#!fsharp
+
+let cleanExample = GetExample 12 1
+let damagedExample = GetExample 12 2
+cleanExample, damagedExample
+
+#!fsharp
+
+type Spring = Damaged | Operational | Unknown
+
+let parseSpring =
+    function
+    | '.' -> Operational
+    | '#' -> Damaged
+    | _ -> Unknown
+
+[|'.'; '#'; '?'|] |> Array.map parseSpring
+
+#!fsharp
+
+let parseGroups = Split "," >> Array.map int
+
+[|
+    "1,1,3"
+    "1,3,1,6"
+|]
+|> Array.map parseGroups
+
+#!fsharp
+
+let parseLine repetitions input =
+    let parts = input |> Split " "
+    let springs = Seq.map parseSpring parts[0] |> Seq.toArray
+    let groups = parseGroups parts[1]
+    springs, groups
+
+parseLine "???.### 1,1,3"
+
+#!fsharp
+
+let parse = GetLines >> Array.map parseLine
+parse damagedExample
+
+#!fsharp
+
+open System.Collections.Generic
+
+let permutations (springs, groups) = 
+    let cache = Dictionary<_, int64>()
+
+    let rec permute springs groups inGroup = 
+        let key = springs, groups, inGroup
+        //printfn "%A" key
+
+        if cache.ContainsKey(key) then
+            cache.Item key
+        else
+            let answer = 
+                match springs, groups, inGroup with
+                // all groups and all springs are accounted for
+                | [], [], _
+                | [], [0], _ -> 1L
+
+                // More damaged springs than specified
+                | Damaged::_, 0::_, true -> 0L
+
+                | Damaged::_, [], _ -> 0L
+                
+                | Unknown::springs, 0::groups, true -> permute springs groups false
+
+                // Must be damaged spring
+                | Damaged::springs, group::groups, _
+                | Unknown::springs, group::groups, true
+                    -> permute springs (group-1::groups) true
+                
+                // we have reached the end of the group, require a gap of an operational spring
+                | Operational::springs, 0::groups, true
+                | Unknown::springs, 0::groups, true
+                | Operational::springs, groups, false -> // or we are not in a group
+                    permute springs groups false
+
+                // We have both damaged and undamaged spring
+                | Unknown::springs, group::groups, _ -> permute springs (group-1::groups) true + permute springs (group::groups) false
+
+                | _::springs, [], false -> permute springs groups false
+                | _ -> 0L// failwith (sprintf "%A %A %b" springs groups inGroup)
+
+            cache.Add(key, answer)
+            answer
+
+    permute (List.ofArray springs) (List.ofArray groups) false
+
+//"???.### 1,1,3" |> parseLine |> permutations
+damagedExample |> parse |> Array.map permutations
+
+#!fsharp
+
+let getPermutations unfold input =
+    input |> parse |> Array.map unfold |> Array.map permutations |> Array.sum
+
+getPermutations id input
+
+#!fsharp
+
+let unfold (springs,groups) =
+    Array.append [| Unknown |] springs
+    |> Array.create 4
+    |> Array.concat
+    |> Array.append springs,
+    groups |> Array.create 5 |> Array.concat
+
+"???.### 1,1,3" |> parseLine |> unfold
+
+#!fsharp
+
+getPermutations unfold damagedExample
+
+#!fsharp
+
+getPermutations unfold input
