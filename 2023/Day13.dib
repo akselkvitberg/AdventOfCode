@@ -1,0 +1,57 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"},{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 13
+
+#!fsharp
+
+let example = GetExample 13 1
+example
+
+#!fsharp
+
+let getDiff prev next = 
+    Seq.zip prev next
+    |> Seq.sumBy (fun (a,b) ->
+        List.zip a b 
+        |> List.where (fun (c,d) -> c <> d) 
+        |> List.length
+    )
+
+let findReflectionInBlock allowedErrors block = 
+
+    let rec checkReflection index prev next = 
+        let errors = getDiff prev next
+
+        match errors, List.isEmpty prev, next with
+        | _, _,  [] -> None
+        | errors, false, _ when errors = allowedErrors -> Some index
+        | _, _, line::next' -> checkReflection (index+1) (line::prev) next'
+
+    let lines = block |> GetLines |> Array.map (Seq.toList) |> Array.toList
+    let transposedLines = List.transpose lines
+
+    match checkReflection 0 [] lines, checkReflection 0 [] transposedLines with
+    | Some index, _ -> 100 * index
+    | _, Some index -> index
+    | _ -> failwith "No index"
+
+let findReflection allowedErrors input =
+    let blocks = input |> GetBlocks
+    blocks |> Seq.map (findReflectionInBlock allowedErrors)
+    
+findReflection 0 example
+
+#!fsharp
+
+findReflection 0 input |> Seq.sum
+
+#!fsharp
+
+findReflection 1 input |> Seq.sum
