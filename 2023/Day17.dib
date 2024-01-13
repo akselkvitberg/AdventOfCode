@@ -1,0 +1,84 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"},{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 17
+
+#!fsharp
+
+let example = GetExample 17 1
+example
+
+#!fsharp
+
+#r "nuget: FSharpx.Collections"
+open FSharpx.Collections
+
+#!fsharp
+
+let parseGrid input = 
+    input 
+    |> GetLines 
+    |> Array.map (Seq.map (string >> int) >> Seq.toArray)
+    |> array2D
+
+parseGrid example
+
+#!fsharp
+
+type Direction = N | E | S | W
+
+let getTurnsFrom = 
+    function
+    | N | S -> [E; W]
+    | E | W -> [N; S]
+
+let runCrucible min max input = 
+    let grid = parseGrid input
+    let size = grid.GetLength(0)
+    let goal = (size-1),(size-1)
+    let isInBounds (x, y) = x >= 0 && x < size && y >= 0 && y < size
+
+    let getMoves x y direction value =
+        let moves = 
+            match direction with
+            | N -> [1..max] |> Seq.map (fun y' -> (x, y - y'), N)
+            | S -> [1..max] |> Seq.map (fun y' -> (x, y + y'), S)
+            | E -> [1..max] |> Seq.map (fun x' -> (x + x', y), E)
+            | W -> [1..max] |> Seq.map (fun x' -> (x - x', y), W)
+            |> Seq.takeWhile (fst >> isInBounds)
+            |> Seq.toList
+
+        let sum = moves |> List.map fst |> List.scan (fun acc (x,y) -> acc + grid[y,x]) 0 |> List.map ((+) value) |> List.skip 1
+        
+        moves |> List.map2 (fun v (pos, direction) -> v, pos, direction) sum |> List.skip (min-1)
+
+    let rec traverse queue visited =
+        let (value, (x,y), direction), restQueue = queue |> PriorityQueue.pop
+        let horizontal = if direction = N || direction = S then true else false
+        if (x,y) = goal then value
+        else if visited |> Set.contains (x,y, horizontal) then traverse restQueue visited
+        else
+            let queue' =
+                getTurnsFrom direction
+                |> Seq.collect (fun d -> getMoves x y d value)
+                |> Seq.sortBy (fun (v, _, _) -> v)
+                |> Seq.fold (fun acc (v, p, d) -> acc |> PriorityQueue.insert (v,p,d)) restQueue
+            traverse queue' (visited |> Set.add (x,y, horizontal))
+    
+    traverse (PriorityQueue.empty false |> PriorityQueue.insert (0, (0,0), N) |> PriorityQueue.insert (0, (0,0), E)) Set.empty
+   
+runCrucible 1 3 example
+
+#!fsharp
+
+runCrucible 1 3 input
+
+#!fsharp
+
+runCrucible 4 10 input
