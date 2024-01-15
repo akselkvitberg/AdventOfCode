@@ -1,0 +1,109 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 19
+
+#!fsharp
+
+let example = GetExample 19 1
+example
+
+#!fsharp
+
+type Part = {X: int; M: int; A: int; S: int}
+
+let parsePart (part:string) =
+    match (part[1..^1]) with 
+    | Regex ".+=(\d+).+=(\d+).+=(\d+).+=(\d+)" [Int x; Int m; Int a; Int s] -> {X = x; M = m; A = a; S = s}
+    | _ -> failwith "Bad part data"
+
+let parseParts parts =
+    parts |> GetLines |> Array.map parsePart
+
+example |> GetBlocks |> Array.last |> parseParts
+
+#!fsharp
+
+type Operation = Redirect of string | Accept | Reject
+
+let getValue part attribute =
+    match attribute with
+    | "x" -> part.X
+    | "m" -> part.M
+    | "a" -> part.A
+    | "s" -> part.S
+    | _ -> failwith "No data"
+
+let getOperation attribute operation value workflow part =
+    let partValue = getValue part attribute
+    let operation = if operation = ">" then (>) else (<)
+    if (operation partValue value) then 
+        match workflow with
+        | "R" -> Some Reject
+        | "A" -> Some Accept
+        | _ -> Some (Redirect(workflow))
+    else None
+
+let parseRule rule = 
+    match rule with
+    | Regex "(.+)(<|>)(\d+):(.+)" [attribute; operation; Int value; workflow] -> getOperation attribute operation value workflow 
+    | "A" -> (fun _ -> Some Accept)
+    | "R" -> (fun _ -> Some Reject)
+    | workflow -> (fun _ -> Some (Redirect(workflow))) 
+    | _ -> failwith $"Bad rule: {rule}"
+
+let rule = parseRule "x>10:one"
+let basePart = {X = 0; M = 0; A = 0; S = 0;}
+rule {basePart with X = 11}, rule basePart, parseRule "R" basePart, parseRule "A" basePart
+
+#!fsharp
+
+let parseRules rules = 
+    rules |> Split "," |> Array.map parseRule
+
+let parseWorkflow workflow =
+    match workflow with
+    | Regex "(\w+){(.+)}" [name; rules] -> name, parseRules rules
+    | _ -> failwith "Bad workflow"
+
+let parseWorkflows input =
+    input |> GetLines |> Array.map parseWorkflow |> Map.ofArray
+
+parseWorkflow "ex{x>10:one,m<20:two,a>30:R,A}"
+
+#!fsharp
+
+let parse input =
+    let [| workflowInput; partsInput; |] = input |> GetBlocks
+    let workflows = parseWorkflows workflowInput
+    let parts = parseParts partsInput
+    workflows, parts
+
+//parse example
+
+#!fsharp
+
+let rec runRules workflows workflowId part =
+    let workflow = workflows |> Map.find workflowId
+    match workflow |> Array.pick (fun rule -> rule part) with
+    | Accept -> Some part
+    | Reject -> None
+    | Redirect workflowId -> runRules workflows workflowId part
+
+let part1 input =
+    let workflows, parts = parse input
+    parts
+    |> Array.choose (runRules workflows "in")
+    |> Array.sumBy (fun p -> p.X + p.M + p.A + p.S)
+
+part1 example
+
+#!fsharp
+
+part1 input
