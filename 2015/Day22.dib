@@ -1,145 +1,108 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"}]}}
+
 #!fsharp
 
-type Spell = 
+type SpellType = 
 | MagicMissile
 | Drain
 | Shield
 | Poison
 | Recharge
 
-type Game = {HP: int; Mana: int; ReshargeCounter: int; ShieldCounter: int; PoisonCounter: int; BossHp: int; BossDamage: int; Spells: Spell list;}
+type Spell = {
+    Type: SpellType
+    Cost: int
+    Damage: int
+    Heal: int
+    Armor: int 
+    Mana: int
+    Poison: int
+    Duration: int
+}
+
+type Game = {
+    HP: int
+    Mana: int
+    BossHp: int
+    BossDamage: int
+    ActiveSpells: Spell list;
+}
+
+type Turn = Player | Boss
+type Difficulty = Easy | Hard
 
 #!fsharp
 
-let spells = [
-    MagicMissile
-    Drain
-    Shield
-    Poison
-    Recharge
+let spell = { Type = MagicMissile; Cost = 0;  Damage = 0; Heal = 0; Armor = 0; Mana = 0; Poison = 0; Duration = 1}
+
+let allSpells = [
+    { spell with Type = MagicMissile;  Cost = 53; Damage = 4 }
+    { spell with Type = Drain;          Cost = 73; Damage = 2; Heal = 2 }
+    { spell with Type = Shield;         Cost = 113; Armor = 7; Duration = 6 }
+    { spell with Type = Poison;         Cost = 173; Poison = 3; Duration = 6 }
+    { spell with Type = Recharge;       Cost = 229; Mana = 101; Duration = 5 }
 ]
 
-let SpellCost spell =
-    match spell with
-    | MagicMissile -> 53
-    | Drain -> 73
-    | Shield -> 113
-    | Poison -> 173
-    | Recharge -> 229
+#!fsharp
+
+let game = {HP = 50; Mana = 500; BossHp = 55; BossDamage = 8; ActiveSpells = []}
 
 #!fsharp
 
-let game = {HP = 50; Mana = 500; ReshargeCounter = 0; ShieldCounter = 0; PoisonCounter = 0 ; BossHp = 55; BossDamage = 8; Spells = []}
+let rec NextTurn turn difficulty spentMana best (game:Game) = 
+    if best < spentMana then best else
+    if turn = Player && difficulty = Hard && game.HP <= 1 then best else
 
-let ApplyEffects game = 
-    let poisonDamage = if game.PoisonCounter > 0 then 3 else 0
-    let manaResharge = if game.ReshargeCounter > 0 then 101 else 0
-    { game with 
-        BossHp = game.BossHp - poisonDamage; 
-        Mana = game.Mana + manaResharge; 
-        ReshargeCounter = game.ReshargeCounter - 1; 
-        PoisonCounter = game.PoisonCounter - 1; 
-        ShieldCounter = game.ShieldCounter - 1
-    }
+    let mana         = (game.ActiveSpells |> List.sumBy _.Mana) + game.Mana
+    let poisonDamage = game.ActiveSpells |> List.sumBy _.Poison
 
-let ApplySpell game =
-    let spell = game.Spells.Head
-    match spell, SpellCost spell with 
-    | MagicMissile, c when c <= game.Mana -> {game with BossHp = game.BossHp - 4; Spells = game.Spells.Tail; Mana = game.Mana - c}
-    | Drain, c when c <= game.Mana -> {game with BossHp = game.BossHp - 2; HP = game.HP + 2; Spells = game.Spells.Tail; Mana = game.Mana - c}
-    | Shield, c when c <= game.Mana -> {game with ShieldCounter = 6; Spells = game.Spells.Tail; Mana = game.Mana - c}
-    | Poison, c when c <= game.Mana -> {game with PoisonCounter = 6; Spells = game.Spells.Tail; Mana = game.Mana - c}
-    | Recharge, c when c <= game.Mana -> {game with ReshargeCounter = 5; Spells = game.Spells.Tail; Mana = game.Mana - c}
-    | _ -> { game with HP = 0; }
+    let bossHp = game.BossHp - poisonDamage
+    if bossHp <= 0 then spentMana else
 
-let BossTurn game =
-    let game' = ApplyEffects game
-    if game'.BossHp <= 0 
-        then game' 
-    else
-        let damage = game'.BossDamage - (if game'.ShieldCounter > 0 then 7 else 0)
-        { game' with HP = game'.HP - damage;}
+    let activeSpells =
+        game.ActiveSpells
+        |> List.map (fun s -> { s with Duration = s.Duration - 1 })
+        |> List.filter (fun s -> s.Duration > 0)
 
-let PlayerTurn game =
-    let game' = ApplyEffects game
-    if game'.BossHp <= 0
-        then game' 
-    else
-        ApplySpell game'
+    match turn with 
+    | Player ->
+        let affordableSpells = 
+            allSpells
+            |> List.filter (fun s -> s.Cost <= mana)
+            |> List.filter (fun s -> activeSpells |> List.forall (fun x -> x.Type <> s.Type))
 
-let NextTurn game =
-    let game' = PlayerTurn game
-    if game'.BossHp <= 0
-    then game'
-    else BossTurn game'
+        match affordableSpells with
+        | [] -> best
+        | _ -> 
+            affordableSpells
+            |> List.fold (fun newBest s -> 
+                let spentMana = spentMana + s.Cost
+                let mana = mana - s.Cost
 
-NextTurn { game with Spells = spells }
-
-#!fsharp
-
-let AnalyseGame game = 
-    match (game.HP, game.BossHp) with
-    | (a, _) when a <= 0 -> false
-    | (_, b) when b <= 0 -> true
-    | _ -> false
+                let activeSpells = s::activeSpells
+                
+                let hp = match difficulty with 
+                              | Easy -> game.HP + s.Heal
+                              | Hard -> game.HP - 1 + s.Heal
+                
+                let bossHp = bossHp - s.Damage
+                if bossHp <= 0 then 
+                    min newBest spentMana
+                else min newBest (NextTurn Boss difficulty spentMana newBest { game with HP = hp; Mana = mana; BossHp = bossHp; ActiveSpells = activeSpells; })
+                ) best
+    | Boss ->
+        let armor = game.ActiveSpells |> List.sumBy _.Armor
+        let damage = max (game.BossDamage - armor) 1
+        let hp = game.HP - damage
+        if hp <= 0 then best else
+        NextTurn Player difficulty spentMana best { game with HP = hp; Mana = mana; ActiveSpells = activeSpells; BossHp = bossHp }
 
 #!fsharp
 
-{game with HP = 10; Mana = 250; BossHp = 13; BossDamage = 8; Spells = [Poison; MagicMissile]}
-|> NextTurn
-|> NextTurn
+NextTurn Player Easy 0 999999 game
 
 #!fsharp
 
-let secondGame = {game with HP = 10; Mana = 250; BossHp = 13; BossDamage = 8; Spells = [Recharge; Shield; Drain; Poison; MagicMissile]}
-
-[1..secondGame.Spells.Length]
-|> Seq.fold (fun acc _ -> NextTurn acc) secondGame
-|> AnalyseGame
-
-#!fsharp
-
-let someSpells = [Poison; Recharge; Shield; Poison; MagicMissile; MagicMissile; MagicMissile; MagicMissile; MagicMissile]
-let thirdGame = {game with Spells = someSpells}
-
-[1..thirdGame.Spells.Length]
-|> Seq.scan (fun acc _ -> NextTurn acc) thirdGame
-
-#!fsharp
-
-let WonTheGame spells = 
-    let game' = { game with Spells = spells} 
-    [1..spells.Length]
-    |> Seq.fold (fun acc _ -> NextTurn acc) game'
-    |> AnalyseGame
-
-WonTheGame someSpells
-
-#!fsharp
-
-let maxSpend = someSpells |> Seq.sumBy (fun x -> SpellCost x)
-maxSpend
-
-#!fsharp
-
-let rec Recurse spellList =
-    seq {
-        for spell in spells do
-            let newSpellList = spell::spellList
-            if newSpellList |> Seq.sumBy SpellCost > maxSpend
-            then yield None
-            else
-                yield Some newSpellList
-                for otherList in (Recurse newSpellList |> Seq.choose id) do
-                    yield Some otherList
-    }
-
-let list = Recurse [] |> Seq.choose id //|> Seq.rev |> Seq.map (Seq.sumBy SpellCost)
-
-#!fsharp
-
-list 
-|> Seq.filter WonTheGame 
-//|> Seq.length
-|> Seq.map (fun x -> (x, x |> Seq.sumBy SpellCost))
-|> Seq.sortBy snd
+NextTurn Player Hard 0 999999 game
