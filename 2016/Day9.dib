@@ -1,7 +1,12 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"}]}}
+
 #!fsharp
 
 #load "util.fsx"
 open Utils
+open System.Text.RegularExpressions
 
 let input = GetData 9
 input |> Seq.length
@@ -21,25 +26,28 @@ let example = [
 
 #!fsharp
 
-let rec parseV1 input = 
+let rec decompressV1 input = 
     match input with 
-    | Regex "(.*?)\((\d+)x(\d+)\)(.*)" [prefix; Int characters; Int times; rest] -> prefix + (String.Join( "", Seq.replicate times rest[0..characters-1])) + parseV1 rest[characters..]
+    | Regex "(.*?)\((\d+)x(\d+)\)(.*)" [prefix; Int characters; Int times; rest] -> prefix + (String.Join( "", Seq.replicate times rest[0..characters-1])) + decompressV1 rest[characters..]
     | a -> a
 
-example |> Seq.map (fun x -> x, parseV1 x |> Seq.length, parseV1 x)
+example |> Seq.map (fun x -> x, decompressV1 x |> Seq.length, decompressV1 x)
 
 #!fsharp
 
 input
-|> parseV1
+|> decompressV1
 |> Seq.length
 
 #!fsharp
 
-let rec parseV2 (input:string) =
-    match input with 
-    | Regex "(.*?)\((\d+)x(\d+)\)(.*)" [prefix; Int characters; Int times; rest] -> prefix.Length + times * parseV2 rest
-    | a -> a.Length
+let rec DecompressV2 (input:string) =
+    match input with
+    | RegexEx "\((\d+)x(\d+)\)" ([Int length; Long times], m) -> 
+        let startIndex = m.Index + m.Length
+        let text = input.Substring(startIndex, length)
+        let rest = input.Substring(startIndex + length)
+        int64 m.Index + (times * DecompressV2 text) + DecompressV2 rest
+    | _ -> int64 input.Length
 
-example
-|> Seq.map (fun x -> x, parseV2 x)
+DecompressV2 input

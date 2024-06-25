@@ -41,6 +41,11 @@ let (|Regex|_|) pattern input =
     if m.Success then Some(List.tail [ for g in m.Groups -> g.Value])
     else None
 
+let (|RegexEx|_|) pattern input = 
+    let m = Regex.Match(input, pattern)
+    if m.Success then Some(List.tail [ for g in m.Groups -> g.Value], m)
+    else None
+
 let (|Int|_|) (str:string) = match Int32.TryParse str with true, value -> Some value | _ -> None
 let (|UInt|_|) (str:string) = match UInt32.TryParse str with true, value -> Some value | _ -> None
 let (|Long|_|) (str:string) = match Int64.TryParse str with true, value -> Some value | _ -> None
