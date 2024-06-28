@@ -1,3 +1,7 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"}]}}
+
 #!fsharp
 
 #load "util.fsx"
@@ -9,38 +13,53 @@ input
 
 open System.Security.Cryptography
 
-let MD5 (input:string) int = Convert.ToHexString(MD5.HashData(Encoding.ASCII.GetBytes($"{input}{int}"))).ToLower()
+let MD5 (input:string) = Convert.ToHexString(MD5.HashData(Encoding.ASCII.GetBytes(input))).ToLower()
 
-MD5 "abc" 18
+MD5 "abc18"
 
 #!fsharp
 
 let has5ofCharacter (segment:string) (hash:string) =
     hash.Contains(segment)
 
-let isNext1000Matching input int segment =
-    [int+1..int+1000]
-    |> Seq.map (MD5 input)
-    |> Seq.exists (has5ofCharacter segment)
+let isNext1000Matching hashes segment =
+    hashes |> Seq.exists (has5ofCharacter segment)
 
-let isPotentialKey input int = 
-    let key = MD5 input int
+let isKey (hashes:string array) =
+    let key = hashes[0]
     match key with
-    | Regex "(.)\1\1" [c] -> isNext1000Matching input int (new string(c[0], 5))
+    | Regex "(.)\1\1" [c] -> isNext1000Matching (hashes[1..])  (new string(c[0], 5))
     | _ -> false
 
-isPotentialKey "abc" 39
+#!fsharp
+
+let getKey (hashingFunction) input =
+    Seq.initInfinite (fun i -> i, hashingFunction $"{input}{i}")
+    |> Seq.windowed 1000
+    |> Seq.filter (fun hashes -> hashes |> Array.map snd |> isKey)
+    |> Seq.skip 63
+    |> Seq.head
+    |> Array.head
+    |> fst
+    |> printfn "%d"
+    
+getKey MD5 "abc"
 
 #!fsharp
 
-Seq.initInfinite (fun x -> x + 1)
-|> Seq.filter (isPotentialKey "abc")
-|> Seq.skip 63 // 64 is the next
-|> Seq.head
+getKey MD5 input
 
 #!fsharp
 
-Seq.initInfinite (fun x -> x + 1)
-|> Seq.filter (isPotentialKey input)
-|> Seq.skip 63 // 64 is the next
-|> Seq.head
+let MD5v2 input =
+    [|0..2016|] |> Array.fold (fun acc _ -> MD5 acc) input
+
+MD5v2 "abc0"
+
+#!fsharp
+
+getKey MD5v2 "abc"
+
+#!fsharp
+
+getKey MD5v2 input
