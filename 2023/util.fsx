@@ -40,8 +40,9 @@ let GetExample day id =
         let pattern = @"<pre><code>(.*?)</code></pre>";
         let matches = Regex.Matches(html, pattern, RegexOptions.Singleline)
         let exampleData = matches |> Seq.map (fun m -> m.Groups[1].Value) |> Seq.toArray |> fun a -> Array.get a (id-1)
-        File.WriteAllText (file, exampleData)
-        exampleData
+        let decodedExampleData = WebUtility.HtmlDecode exampleData
+        File.WriteAllText (file, decodedExampleData)
+        decodedExampleData
 
 let Split (character:string) (input:string) = input.Split(character, StringSplitOptions.RemoveEmptyEntries)
 
@@ -65,6 +66,12 @@ let (|IntArray|) list =
 
 let (|LongArray|) list = 
     list |> Split " " |> Array.map int64
+
+let (|SplitArray|) character list = 
+    list |> Split character
+
+let (|SplitList|) character list = 
+    list |> Split character |> List.ofArray
 
 let RegexReplace pattern (replacement:string) input =
     let regex = new Regex(pattern)
