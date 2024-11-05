@@ -1,6 +1,10 @@
 #!meta
 
-{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"},{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!markdown
+
+I could not find a better way to handle both parts in one file
 
 #!fsharp
 
@@ -20,7 +24,7 @@ type Card =
 | A = 14 
 | K = 13
 | Q = 12
-| J = 11
+| J = 1
 | T = 10
 
 type Hand = Card list
@@ -66,14 +70,34 @@ parse example
 #!fsharp
 
 let getPairing (hand:Hand) =
-    match hand |> List.countBy id |> List.map snd |> List.sortDescending with
-    | 5 :: _ -> FiveOfAKind
-    | 4 :: _ -> FourOfAKind
-    | 3 :: 2 :: _ -> FullHouse
-    | 3 :: _ -> ThreeOfAKind
-    | 2 :: 2 :: _ -> TwoPair
-    | 2 :: _ -> OnePair
-    | 1 :: _ -> HighCard
+    let data = hand |> List.countBy id |> List.sortByDescending fst |> List.sortByDescending snd
+    //printfn "%A" data
+    match data with
+    | (_,5) :: _ -> FiveOfAKind
+    | (_,4) :: (Card.J, 1) :: _ -> FiveOfAKind
+    | (_,3) :: (Card.J, 2) :: _ -> FiveOfAKind
+    | (Card.J,3) :: (_, 2) :: _ -> FiveOfAKind
+    | (Card.J,4) :: (_, 1) :: _ -> FiveOfAKind
+
+    | (_,4) :: _ -> FourOfAKind
+    | (_,3) :: _ :: (Card.J, 1) :: _ -> FourOfAKind
+    | (_,2) :: (Card.J, 2) :: _ -> FourOfAKind
+    | (Card.J,3) :: _ -> FourOfAKind
+
+    | (_,3) :: (_,2) :: _ -> FullHouse
+    | (_,2) :: (_,2) :: (Card.J, 1) :: _ -> FullHouse
+
+    
+    | (_,3) :: _ -> ThreeOfAKind
+    | (_,2) :: (_,1) :: (Card.J, 1) :: _ -> ThreeOfAKind
+    | (_,2) :: (_,1) :: (_,1) :: (Card.J, 1) :: _ -> ThreeOfAKind
+    | (Card.J,2) :: _ -> ThreeOfAKind
+
+    | (_,2) :: (_,2) :: _ -> TwoPair
+
+    | (_,2) :: _ -> OnePair
+    | (_,1) :: (_,1) :: (_,1) ::(_,1) :: (Card.J, 1) :: _ -> OnePair
+    | (_,1) :: _ -> HighCard
     | _ -> failwith "How can you get something else?"
 
 parse example
