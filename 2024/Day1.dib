@@ -1,0 +1,52 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+let input = GetData 1
+let example = GetExample 1 1
+
+#!fsharp
+
+let parseList input = 
+    input
+    |> GetLines
+    |> Array.map (fun x -> Split " " x |> Array.map int)
+    |> Array.transpose
+    |> fun [|a;b|] -> a,b
+
+parseList example
+
+#!fsharp
+
+let part1 (list1, list2) =
+    let list1 = list1 |> Array.sort
+    let list2 = list2 |> Array.sort
+
+    list1
+    |> Array.zip list2
+    |> Array.sumBy (fun (a,b) -> abs(a - b))
+
+parseList example |> part1    
+
+#!fsharp
+
+parseList input |> part1
+
+#!fsharp
+
+let part2 (list1, list2) =
+    let appearances = list2 |> Array.countBy id |> Map.ofArray
+    
+    list1
+    |> Array.sumBy (fun x -> x * (appearances.TryFind(x) |> Option.defaultValue 0))
+
+
+parseList example |> part2
+
+#!fsharp
+
+parseList input |> part2
