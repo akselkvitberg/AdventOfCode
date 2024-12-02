@@ -1,0 +1,46 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+let input = GetData 2 |> GetLines
+let example = GetExample 2 1 |> GetLines
+example
+
+#!fsharp
+
+let parse = Array.map (Split " " >> Array.map int)
+example |> parse
+
+#!fsharp
+
+let isSafe report =
+    let direction = 
+        report 
+        |> Seq.pairwise
+        |> Seq.map (fun (a,b) -> a - b)
+        |> Set.ofSeq
+    Set.isSubset direction (Set.ofList [1;2;3]) || Set.isSubset direction (Set.ofList [-1;-2;-3])
+
+parse example |> Array.map isSafe
+
+#!fsharp
+
+parse input |> Array.filter isSafe |> Array.length
+
+#!fsharp
+
+let safeWithProblemDampner (report:int array) =
+    if isSafe report then true
+    else 
+        [0..report.Length-1]
+        |> List.exists (fun i -> report |> Seq.removeAt i |> isSafe)
+
+parse example |> Array.map safeWithProblemDampner
+
+#!fsharp
+
+parse input |> Array.filter safeWithProblemDampner |> Array.length
