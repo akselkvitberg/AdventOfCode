@@ -1,0 +1,100 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+let input = GetData 4
+let example = GetExample 4 2
+example
+
+#!fsharp
+
+let xmas = ['X';'M';'A';'S']
+let detectHorizontal (x,y) (grid: string array) =
+    x + 3 < grid.[y].Length
+    && [ for i in 0..3 -> grid.[y].[x+i] ] = xmas
+
+let detectHorizontalRev (x,y) (grid: string array) =
+    x - 3 >= 0
+    && [ for i in 0..3 -> grid.[y].[x-i]] = xmas
+
+let detectVertical (x,y) (grid: string array) =
+    y + 3 < grid.Length 
+    && [ for i in 0..3 -> grid.[y+i].[x] ] = xmas
+
+let detectVerticalRev (x,y) (grid: string array) =
+    y - 3 >= 0
+    && [ for i in 0..3 -> grid.[y-i].[x] ] = xmas
+
+let detectDiagonalDownRight (x,y) (grid: string array) =
+    y + 3 < grid.Length && x + 3 < grid.[y].Length
+    && [for i in 0..3 -> grid.[y+i].[x+i]] = xmas
+
+let detectDiagonalUpRight (x,y) (grid: string array) =
+    y - 3 >= 0 && x + 3 < grid.[y].Length
+    && [for i in 0..3 -> grid.[y-i].[x+i]] = xmas
+
+let detectDiagonalDownLeft (x,y) (grid: string array) =
+    y + 3 < grid.Length && x - 3 >= 0
+    && [for i in 0..3 -> grid.[y+i].[x-i]] = xmas
+
+let detectDiagonalUpLeft (x,y) (grid: string array) =
+    y - 3 >= 0 && x - 3 >= 0
+    && [for i in 0..3 -> grid.[y-i].[x-i]] = xmas
+
+let detectXmas (input:string) = 
+    let grid = GetLines input
+    let xs = grid |> Array.mapi (fun y str -> str |> Seq.indexed |> Seq.filter (fun (x, c) -> c = 'X') |> Seq.map (fun (x, _) -> (x, y)) |> Seq.toList)
+                  |> Seq.collect id |> Seq.toArray
+
+    [|
+        for (x,y) in xs do
+        yield detectHorizontal (x,y) grid
+        yield detectHorizontalRev (x,y) grid
+        yield detectVertical (x,y) grid
+        yield detectVerticalRev (x,y) grid
+        yield detectDiagonalDownRight (x,y) grid
+        yield detectDiagonalUpRight (x,y) grid
+        yield detectDiagonalDownLeft (x,y) grid
+        yield detectDiagonalUpLeft (x,y) grid
+    |]
+    |> Seq.filter id
+    |> Seq.length
+    
+detectXmas example
+
+#!fsharp
+
+detectXmas input
+
+#!fsharp
+
+let mas = ['M';'A';'S']
+let sam = ['S';'A';'M']
+let detectCross (x,y) (grid: string array) =
+    if (x = 0 || y = 0 || x = grid.[0].Length - 1 || y = grid.Length - 1) then false
+    else
+        let diagRight = [for i in -1..1 -> grid.[y+i].[x+i]]
+        let diagLeft = [for i in -1..1 -> grid.[y+i].[x-i]]
+        (diagRight = mas || diagRight = sam) && (diagLeft = mas || diagLeft = sam)
+
+let detectCrossMas input =
+    let grid = GetLines input
+    let aPos = grid |> Array.mapi (fun y str -> str |> Seq.indexed |> Seq.filter (fun (x, c) -> c = 'A') |> Seq.map (fun (x, _) -> (x, y)) |> Seq.toList)
+                  |> Seq.collect id |> Seq.toArray
+
+    [
+        for a in aPos do
+        yield detectCross a grid
+    ]
+    |> Seq.filter id
+    |> Seq.length
+
+detectCrossMas example
+
+#!fsharp
+
+detectCrossMas input
