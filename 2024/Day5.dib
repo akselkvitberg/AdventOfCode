@@ -1,0 +1,57 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+let input = GetData 5
+let example = GetExample 5 1
+example
+
+#!fsharp
+
+let parse input = 
+    let [| rules; updates |] = Split "\n\n" input |> Array.map GetLines
+
+    let rules = rules   |> Array.map (Split "|" >> fun [|Int a; Int b|] -> a,b) |> Set
+    let updates = updates |> Array.map (Split "," >> Array.map int >> Array.toList)
+
+    rules, updates
+
+parse example
+
+#!fsharp
+
+let sort (rules: Set<int*int>) update = 
+    update |> List.sortWith (fun a b -> if rules.Contains (a,b) then -1 else 1)
+
+#!fsharp
+
+let part1 input = 
+    let rules, updates = parse input
+    updates
+    |> Array.filter (fun pages -> pages = sort rules pages)
+    |> Array.sumBy (fun pages -> pages[pages.Length/2])
+part1 example
+
+#!fsharp
+
+part1 input
+
+#!fsharp
+
+let part2 input = 
+    let rules, updates = parse input
+    updates
+    |> Array.choose (fun pages -> 
+        let sorted = sort rules pages
+        if sorted = pages then None else Some sorted)
+    |> Array.sumBy (fun pages -> pages[pages.Length/2])
+    
+part2 example
+
+#!fsharp
+
+part2 input
