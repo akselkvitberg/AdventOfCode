@@ -51,6 +51,8 @@ let GetBlocks (input:string) = input.Trim().Split([|"\n\n"; "\r\n\r\n"|], String
 let ToLower (input:string) = input.ToLower()
 let ToUpper (input:string) = input.ToUpper()
 
+let charToInt (c:char) = int c - int '0'
+
 let (|Regex|_|) pattern input = 
     let m = Regex.Match(input, pattern)
     if m.Success then Some(List.tail [ for g in m.Groups -> g.Value])
