@@ -1,6 +1,6 @@
 #!meta
 
-{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"},{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
 
 #!fsharp
 
@@ -12,7 +12,7 @@ example
 
 #!fsharp
 
-let parse input = input |> Split " " |> Array.map int64
+let parse input = input |> Split " " |> Array.map int64 |> List.ofArray
 
 parse example
 
@@ -22,10 +22,10 @@ let (|SplitStone|_|) (number:int64) =
     let number = string number
 
     if number.Length % 2 = 0 then
-        Some [|
-        int64 number[..number.Length/2-1]
-        int64 number[number.Length/2..]
-        |]
+        Some [
+            int64 number[..number.Length/2-1]
+            int64 number[number.Length/2..]
+        ]
     else
         None
 
@@ -39,27 +39,27 @@ match 12345678L with
 
 #!fsharp
 
-let step (stones: int64 array) = 
-    [|
-        for stone in stones do
-        match stone with
-        | 0L -> yield 1L
-        | SplitStone data -> yield! data
-        | _ -> yield stone * 2024L
-    |]
+let nextStones (stone: int64) =
+    match stone with
+    | 0L -> [1L]
+    | SplitStone data -> data
+    | _ -> [stone * 2024L]
+
+#!fsharp
+
+let step (stones: int64 list) = 
+    stones |> List.collect nextStones
 
 parse example |> step
 
 #!fsharp
 
-let part blinks input =
+let part1 input =
     let stones = parse input
 
-    [1..blinks]
+    [1..25]
     |> List.fold (fun acc _ -> step acc) stones
-    |> Array.length
-
-let part1 = part 25
+    |> List.length
 
 part1 "125 17"
 
@@ -67,7 +67,27 @@ part1 "125 17"
 
 part1 input
 
+#!markdown
+
+Part 2 cannot be solved the naive way, we need to optimize.
+
 #!fsharp
 
-let part2 = part 75
+let runStepPart2 (stoneGroup: (int64 * int64) list) =
+    stoneGroup
+    |> List.collect (fun (stone, count) -> (nextStones stone |> List.map (fun x -> x, count)))
+    |> List.groupBy fst
+    |> List.map (fun (x, y) -> x, List.sumBy snd y)
+
+let part2 input = 
+    let stones = parse input |> List.countBy id |> List.map (fun (x, y) -> x, int64 y)
+    
+    [1..75]
+    |> List.fold (fun acc _ -> runStepPart2 acc) stones
+    |> List.sumBy snd
+
+part2 "125 17"
+
+#!fsharp
+
 part2 input
