@@ -1,0 +1,73 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+let input = GetData 11
+let example = "0 1 10 99 999"
+example
+
+#!fsharp
+
+let parse input = input |> Split " " |> Array.map int64
+
+parse example
+
+#!fsharp
+
+let (|SplitStone|_|) (number:int64) =
+    let number = string number
+
+    if number.Length % 2 = 0 then
+        Some [|
+        int64 number[..number.Length/2-1]
+        int64 number[number.Length/2..]
+        |]
+    else
+        None
+
+match 123456789L with 
+| SplitStone data -> printfn "%A" data
+| _ -> printfn "None"
+
+match 12345678L with 
+| SplitStone data -> printfn "%A" data
+| _ -> printfn "None"
+
+#!fsharp
+
+let step (stones: int64 array) = 
+    [|
+        for stone in stones do
+        match stone with
+        | 0L -> yield 1L
+        | SplitStone data -> yield! data
+        | _ -> yield stone * 2024L
+    |]
+
+parse example |> step
+
+#!fsharp
+
+let part blinks input =
+    let stones = parse input
+
+    [1..blinks]
+    |> List.fold (fun acc _ -> step acc) stones
+    |> Array.length
+
+let part1 = part 25
+
+part1 "125 17"
+
+#!fsharp
+
+part1 input
+
+#!fsharp
+
+let part2 = part 75
+part2 input
