@@ -1,0 +1,114 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+let input = GetData 12
+let example = GetExample 12 1
+example
+
+#!fsharp
+
+let parse (input:string) = 
+    let plots = 
+        input
+        |> GetLines
+        |> Array.mapi (fun y l -> l |> Seq.mapi (fun x v -> (x,y), v))
+        |> Seq.collect id
+        |> Map.ofSeq
+    plots
+
+parse example
+
+#!fsharp
+
+let neighbours x y = 
+    [
+        x-1,y
+        x+1,y
+        x,y-1
+        x,y+1
+    ]
+
+let rec floodFill plots seen (x,y) = 
+    match Set.contains(x,y) seen, Map.tryFind (x,y) plots with
+    | _, None | true, _ -> seen, 0
+    | _, Some id ->
+        let adjacent = 
+            neighbours x y
+            |> List.filter (fun coord -> match Map.tryFind coord plots with Some(i) -> i = id | _ -> false)
+
+        let state = (Set.add (x,y) seen, 4 - (List.length adjacent))
+
+        let valu = 
+            adjacent
+            |> List.filter (fun coord -> (seen.Contains coord |> not))
+            |> List.fold (fun (seen, perimeter) neighbour -> 
+                let seen, newPerimeter = floodFill plots seen neighbour
+                seen, perimeter + newPerimeter) state
+        valu
+
+floodFill (parse example) Set.empty (0,0)
+
+#!fsharp
+
+let rec getRegions plots = 
+    match plots |> Map.toList with
+    | [] -> []
+    | (coord, _)::_ -> 
+        let region, perimeter = floodFill plots Set.empty coord
+        let plots = region |> Set.fold (fun map coord -> Map.remove coord map) plots
+        (region, perimeter)::getRegions plots
+
+#!fsharp
+
+let part1 input =
+    parse input
+    |> getRegions
+    |> List.map (fun (region, perimeter) -> region.Count * perimeter)
+    |> List.sum
+
+part1 example
+
+#!fsharp
+
+part1 input
+
+#!fsharp
+
+let convexCheck region a b =
+    not (Set.contains a region || Set.contains b region)
+
+let concaveCheck region a b c = 
+    Set.contains a region && (not (Set.contains b region)) && Set.contains c region
+
+let cornerCheck region (x, y) =     
+    [
+        [ x,y-1; x+1,y-1; x+1,y ]
+        [ x+1,y; x+1,y+1; x,y+1 ]
+        [ x,y+1; x-1,y+1; x-1,y ]
+        [ x-1,y; x-1,y-1; x,y-1 ]
+    ]
+    |> List.filter (fun [a;b;c] -> convexCheck region a c || concaveCheck region a b c)
+
+let findSidesOfRegion region =
+    region
+    |> Set.toSeq
+    |> Seq.collect (cornerCheck region)
+    |> Seq.length
+    |> (*) region.Count
+
+let part2 input = 
+    parse input
+    |> getRegions
+    |> List.map (fun (region, _) -> findSidesOfRegion region)
+    |> List.sum
+
+part2 example
+
+#!fsharp
+
+part2 input
