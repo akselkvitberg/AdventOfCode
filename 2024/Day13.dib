@@ -1,0 +1,112 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+let input = GetData 13
+let example = GetExample 13 1
+example
+
+#!fsharp
+
+type Vector = { X : int64; Y: int64}
+
+let parseMachine input =
+    let [|a;b;price|] = input |> GetLines
+
+    let getXY input =  match input with Regex "(\d+), ..(\d+)" [Long x; Long y] -> { X = x; Y = y } | _ -> failwith input
+
+    getXY a,
+    getXY b,
+    getXY price
+
+let parse input =
+    input
+    |> GetBlocks
+    |> Array.map parseMachine
+
+parse example
+
+#!fsharp
+
+let tryToGetPrice iterations (A, B, price) =
+    let tryCombination (a, b) =
+        let x = A.X * a + B.X * b
+        let y = A.Y * a + B.Y * b
+        { X = x; Y = y } = price
+    
+    [0L..iterations] |> List.allPairs [0L..iterations]
+    |> List.tryFind tryCombination
+    |> Option.map (fun (a,b) -> a * 3L + b )
+
+tryToGetPrice 100L ({ X = 94; Y = 34 }, { X = 22; Y = 67 }, { X = 8400; Y = 5400 })
+
+#!fsharp
+
+let part1 input =
+    input
+    |> parse
+    |> Array.choose (tryToGetPrice 100)
+    |> Array.sum
+
+part1 example
+
+#!fsharp
+
+part1 input
+
+#!markdown
+
+Given $a \cdot x_1 + b \cdot x_2 = x_3$ and $a \cdot y_1 + b \cdot y_2 = y_3$
+
+Solve for b
+
+$b \cdot x_2 = x_3 - a \cdot x_1$
+
+$b = \frac{x_3 - a \cdot x_1}{x_2}$
+
+Substitute b in the second equation
+
+$a \cdot y_1 + \left(\frac{x_3 - a \cdot x_1}{x_2}\right) \cdot y_2 = y_3$
+
+$a \cdot y_1 + \frac{y_2 \cdot x_3}{x_2} - \frac{a \cdot y_2 \cdot x_1}{x_2} = y_3$
+
+$a = \frac{y_3 - \frac{y_2 \cdot x_3}{x_2}}{y_1 - \frac{y_2 \cdot x_1}{x_2}}$
+
+$a = \frac{\frac{y_3 \cdot x_2 - y_2 \cdot x_3}{x_2}}{\frac{y_1 \cdot x_2 - y_2 \cdot x_1}{x_2}}$
+
+$a = \frac{x_3 \cdot y_2 - y_3 \cdot x_2}{y_2 \cdot x_1 - y_1 \cdot x_2}$
+
+#!fsharp
+
+// Something something maths
+let solve (A, B, price) =
+    let b = (price.X * A.Y - price.Y * A.X) / (A.Y * B.X - B.Y * A.X)
+    let a = (price.X - b * B.X) / A.X
+    if a*A.X + b*B.X = price.X && a*A.Y + b*B.Y = price.Y 
+    then Some (a * 3L + b)
+    else None
+
+solve ({ X = 26L; Y = 66L }, { X = 67L; Y = 21L }, { X = 10000000012748L; Y = 10000000012176L })
+
+#!fsharp
+
+let increasePricePosition (A,B,price) =
+    A,B, {X = price.X + 10000000000000L; Y = price.Y + 10000000000000L}
+
+let part2 input =
+    input
+    |> parse
+    |> Array.map increasePricePosition
+    |> Array.choose solve
+    |> Array.sum
+    
+
+part2 example
+
+#!fsharp
+
+part2 input
