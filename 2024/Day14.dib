@@ -1,0 +1,127 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#r "nuget: SkiaSharp"
+#load "util.fsx"
+open Utils
+open SkiaSharp
+let input = GetData 14
+let example = GetExample 14 1
+example
+
+#!fsharp
+
+let parse input = 
+    input
+    |> GetLines
+    |> Array.map (function Regex "p=(-?\d+),(-?\d+) v=(-?\d+),(-?\d+)" [Int px; Int py; Int vx; Int vy] -> (px, py, vx, vy) | line -> failwith $"invalid input {line}")
+
+parse example
+
+#!fsharp
+
+let simulate steps width height robots =
+
+    let stepRobot (px, py, vx, vy) =
+        let px = (width + px + vx) % width
+        let py = (height + py + vy) % height
+        (px, py, vx, vy)
+
+    let step robots = robots |> Array.map stepRobot
+
+    [1..steps]
+    |> List.fold (fun robots _ -> step robots) robots
+
+(parse example) |> simulate 100 11 7
+
+#!fsharp
+
+let findRobotsInQuadrant width height robots = 
+    let width = width / 2
+    let height = height / 2
+    robots
+    |> Array.map (fun (px, py, _, _) -> 
+        if px < width && py < height then 1
+        elif px < width && py > height then 2
+        elif px > width && py < height then 3
+        elif px > width && py > height then 4
+        else 5
+    )
+    |> Array.filter ((<>) 5)
+    |> Array.countBy id
+    |> Array.map snd
+    |> Array.reduce (*)
+
+parse example
+|> simulate 100 11 7 
+|> findRobotsInQuadrant 11 7
+
+#!fsharp
+
+parse example |> simulate 100 101 103 |> findRobotsInQuadrant 101 103
+
+#!fsharp
+
+let dilate robots = 
+    let positions = 
+        robots
+        |> Array.map (fun (px, py, vx, vy) -> (px, py))
+        |> Set.ofArray
+    
+    positions
+    |> Set.filter (fun (px, py) -> 
+        let neighbours = 
+            [
+                (px - 1, py)
+                (px + 1, py)
+                (px, py - 1)
+                (px, py + 1)
+            ]
+            |> List.filter (fun (px', py') -> Set.contains (px', py') positions)
+            |> List.length
+        (neighbours > 3)
+    )
+    |> Set.count
+
+parse input |> simulate 6285 101 103 |> dilate
+
+#!fsharp
+
+let paint = new SKPaint(Color = SKColors.Black)
+
+let drawRobots width height robots =
+    let info = new SKImageInfo(width, height);
+    let surface = SKSurface.Create(info);
+    let canvas = surface.Canvas;
+    canvas.Clear(SKColors.White);
+
+    for (px, py, _, _) in robots do
+        let rect = new SKRect(float32 px, float32 py, float32 px + 1f, float32 py + 1f)
+        canvas.DrawRect(rect, paint)
+
+    surface
+
+#!fsharp
+
+let findEasterEgg width height input =
+    let robots = 
+        parse input
+        |> simulate 1 width height
+
+    let rec iterate steps robots =
+        let robots = simulate 1 width height robots
+        let dilated = dilate robots
+        if dilated > 10 then
+            robots, steps
+        else
+            iterate (steps + 1) robots
+    
+    iterate 2 robots // start at 2 because we already did one step
+
+let (robots, steps) = findEasterEgg 101 103 input
+
+steps.Display()
+drawRobots 101 103 robots
