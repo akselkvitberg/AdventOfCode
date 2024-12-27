@@ -1,0 +1,156 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"},{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+let input = GetData 15
+let example = GetExample 15 1
+example
+
+#!fsharp
+
+type Item = Empty | Wall | Box | Robot
+type Direction = Up | Down | Left | Right
+
+let parse input = 
+    let [|grid; instructions|] = 
+        input
+        |> GetBlocks
+
+    let grid =
+        grid 
+        |> GetLines
+        |> Seq.mapi (fun y l -> l |> Seq.mapi (fun x c -> (x,y), c))
+        |> Seq.collect id
+        |> Map.ofSeq
+        |> Map.map (fun _ c -> 
+            match c with
+            | '.' -> Empty
+            | '#' -> Wall
+            | 'O' -> Box
+            | '@' -> Robot
+            | _ -> failwith "invalid character")
+        |> Map.filter (fun _ v -> v <> Empty)
+
+    let instructions = 
+        instructions
+        |> GetLines
+        |> Seq.collect (Seq.map (function
+                | '^' -> Up
+                | 'v' -> Down
+                | '<' -> Left
+                | '>' -> Right
+                | _ -> failwith "invalid character"))
+        |> Seq.toList
+
+    //let robot, grid = grid |> Map.partition (fun _ v -> v = Robot)
+
+    let robot = Map.tryFindKey (fun _ v -> v = Robot) grid |> Option.get
+
+    grid, instructions, robot
+    
+parse example
+
+#!fsharp
+
+let drawMap (grid: Map<(int*int),Item>) =
+    let max = 
+        Map.keys grid
+        |> Seq.map fst
+        |> Seq.max
+    
+    [|
+        for y in 0..max do
+        [|
+            for x in 0..max do
+                match Map.tryFind (x,y) grid with
+                | Some Wall -> '#'
+                | Some Box -> 'O'
+                | Some Robot -> '@'
+                | _ -> '.'
+        |] |> String
+    |] 
+    |> String.concat "\n"
+    |> fun s -> s.Display()
+    |> ignore
+    //|> String.Join "\n"
+
+let grid, instructions, robot = parse example
+drawMap grid
+
+#!fsharp
+
+let rec processMove grid (x,y) direction =
+    let dx, dy = 
+        match direction with
+        | Up -> 0, -1
+        | Down -> 0, 1
+        | Left -> -1, 0
+        | Right -> 1, 0
+
+    let nextPos = x + dx, y + dy
+
+    //printfn "Moving %A to %A" direction nextPos
+    match Map.tryFind (x,y) grid with
+    | Some Wall -> 
+        //printfn "Wall found"
+        None // Cannot move
+
+    | Some item -> // try to move this box
+        //printfn "Item found"
+        match processMove grid nextPos direction with
+        | None -> 
+            //printfn "Item cannot move"
+            None // Cannot move the box
+        | Some (grid, position) ->
+            //printfn "Item moved"
+            Some (
+                grid
+                |> Map.remove (x,y)
+                |> Map.add nextPos item, nextPos
+            )
+    // | Some Robot -> // move
+    //     //printfn "Moving"
+    //     Some (
+    //         grid
+    //         |> Map.remove (x,y)
+    //         |> Map.add nextPos Robot, nextPos
+    //     )
+    | None -> 
+        //printfn "Nothing found"
+        Some (grid, nextPos)
+
+let grid, _, robot = parse example
+drawMap grid
+let s = processMove grid robot Left
+
+match s with
+| Some (grid, pos) -> drawMap grid
+
+#!fsharp
+
+let part1 input =
+    let grid, instructions, robot = parse input
+
+    let (grid, robot) =
+        instructions
+        |> List.fold (fun (grid, position) instruction -> 
+            match processMove grid position instruction with
+            | Some (grid, position) -> (grid, position)
+            | None -> (grid, position)
+            ) (grid, robot)
+
+    grid
+    |> Map.filter (fun _ v -> v = Box)
+    |> Map.toSeq
+    |> Seq.map (fun ((x,y), box) -> x + y * 100)
+    |> Seq.sum
+
+part1 example
+
+#!fsharp
+
+part1 input
