@@ -1,0 +1,79 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 8
+let example = GetExample 8 1
+example
+
+#!fsharp
+
+let createOperation reg1 op value reg2 check comp registers = 
+    let compare first = 
+        match check with
+        | ">" -> first > comp;
+        | ">=" -> first >= comp
+        | "<" -> first < comp
+        | "<=" -> first <= comp
+        | "==" -> first = comp
+        | "!=" -> first <> comp
+        | _ -> failwith "invalid operation"
+
+    let op v = 
+        let v = Option.defaultValue 0 v
+        match op with 
+        | "inc" -> Some (v + value)
+        | "dec" -> Some (v - value)
+        | _ -> Some (0)
+
+    let reg2Value = 
+        Map.tryFind reg2 registers
+        |> Option.defaultValue 0
+
+    if (compare reg2Value)
+    then Map.change reg1 (fun v -> op v) registers
+    else registers
+    
+
+let parseInstruction line =
+    match line with
+    | Regex "(\w+) (\w+) ([-\d]+) if (\w+) ([><!=]+) ([-\d]+)" [reg1; op; Int value; reg2; check; Int comp ] -> 
+        createOperation reg1 op value reg2 check comp
+    | _ -> failwith $"failed to parse {line}"
+
+let part1 input =
+    input
+    |> GetLines
+    |> Array.map parseInstruction
+    |> Array.fold (fun acc i -> acc |> i ) Map.empty
+    |> Map.toSeq
+    |> Seq.maxBy snd
+
+part1 example
+
+#!fsharp
+
+part1 input
+
+#!fsharp
+
+let part2 input =
+    input
+    |> GetLines
+    |> Array.map parseInstruction
+    |> Array.scan (fun acc i -> acc |> i ) Map.empty
+    |> Array.map (Map.toList)
+    |> Array.filter (fun x -> not x.IsEmpty)
+    |> Array.map (List.maxBy snd)
+    |> Array.maxBy snd
+    
+part2 example
+
+#!fsharp
+
+part2 input

@@ -1,0 +1,97 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"},{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+let input = GetData 19
+let example = GetExample 19 1
+example
+
+#!fsharp
+
+let parse input =
+    let [|towels; patterns|] =
+        input
+        |> GetBlocks
+    
+    let towels = 
+        towels
+        |> Split ", "
+    
+    let patterns =
+        patterns
+        |> GetLines
+
+    towels, patterns
+
+parse example
+
+#!fsharp
+
+open System.Collections.Generic
+let patternExists (towels:string array) (pattern:string) =
+    let rec loop pattern =
+        if pattern = "" then true
+        else 
+            towels
+            |> Array.filter (pattern.StartsWith)
+            |> Array.exists (fun towel -> loop (pattern.Substring(towel.Length)))
+
+    loop pattern
+
+patternExists [|"r";  "wr"; "b"; "g"; "bwu"; "rb"; "gb"; "br"|] "rrbgbr"
+
+#!fsharp
+
+let part1 input =
+    let towels, patterns = parse input
+
+    patterns
+    |> Array.filter (patternExists towels)
+    |> Array.length
+
+part1 example
+
+#!fsharp
+
+part1 input
+
+#!fsharp
+
+open System.Collections.Generic
+let getAllPatterns (towels:string array) (pattern:string) =
+    let cache = Dictionary<string, int64>()
+    
+    let rec loop pattern acc =
+        match cache.TryGetValue(pattern), pattern with 
+        | (true, result), _ -> result
+        | _, "" -> acc + 1L
+        | _ -> 
+            let sum = 
+                towels
+                |> Seq.filter (pattern.StartsWith)
+                |> Seq.sumBy (fun towel -> loop (pattern.Substring(towel.Length)) acc)
+            cache.Add(pattern, sum) |> ignore
+            sum
+
+    loop pattern 0L
+
+getAllPatterns [|"r";  "wr"; "b"; "g"; "bwu"; "rb"; "gb"; "br"|] "rrbgbr"
+
+#!fsharp
+
+let part2 input =
+    let towels, patterns = parse input
+
+    patterns
+    |> Seq.map (getAllPatterns towels)
+    |> Seq.sum
+
+part2 example
+
+#!fsharp
+
+part2 input

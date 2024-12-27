@@ -1,0 +1,136 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"},{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+let input = GetData 17
+let example = GetExample 17 1
+example
+
+#!fsharp
+
+type Machine = {
+    PC: int
+    A: int
+    B: int
+    C: int
+    Program: int array
+    Output: int list
+}
+
+let parse = function
+    Regex "Register A: (\d+)\nRegister B: (\d+)\nRegister C: (\d+)\n\nProgram: ([\d,]+)" [Int a; Int b; Int c; SplitArray "," program] -> 
+        { PC = 0; A = a; B = b; C = c; Program = program |> Array.map int; Output = [] }
+
+parse example
+
+#!fsharp
+
+let getComboOp computer operand =
+    match operand with 
+    | 0 -> 0
+    | 1 -> 1
+    | 2 -> 2
+    | 3 -> 3
+    | 4 -> computer.A
+    | 5 -> computer.B
+    | 6 -> computer.C
+    | _ -> failwith "Invalid operand"
+
+let adv computer operand = 
+    let numerator = computer.A
+    let comboOp = getComboOp computer operand
+    let denominator = pown 2 comboOp
+    { computer with A = numerator / denominator; PC = computer.PC + 2 }
+
+let bxl computer operand =
+    { computer with B = computer.B ^^^ operand; PC = computer.PC + 2 }
+
+let bst computer operand =
+    let comboOp = getComboOp computer operand
+    { computer with B = comboOp % 8; PC = computer.PC + 2 }
+
+let jnz computer operand =
+    if computer.A = 0 then
+        { computer with PC = computer.PC + 2 }
+    else
+        { computer with PC = operand }
+
+let bxc computer operand =
+    { computer with B = computer.B ^^^ computer.C; PC = computer.PC + 2 }
+
+let out computer operand =
+    let comboOp = getComboOp computer operand
+    //printf "%d," (comboOp % 8)
+    { computer with PC = computer.PC + 2; Output = (comboOp % 8) :: computer.Output }
+
+let bdv computer operand =
+    let numerator = computer.A
+    let comboOp = getComboOp computer operand
+    let denominator = pown 2 comboOp
+    { computer with B = numerator / denominator; PC = computer.PC + 2 }
+
+let cdv computer operand =
+    let numerator = computer.A
+    let comboOp = getComboOp computer operand
+    let denominator = pown 2 comboOp
+    { computer with C = numerator / denominator; PC = computer.PC + 2 }
+
+let rec runProgramStep computer =
+    if computer.PC >= computer.Program.Length then
+        { computer with Output = computer.Output |> List.rev }
+    else
+        let opcode = computer.Program.[computer.PC]
+        let operand = computer.Program.[computer.PC + 1]
+
+        let operator = 
+            match opcode with 
+            | 0 -> adv
+            | 1 -> bxl
+            | 2 -> bst
+            | 3 -> jnz
+            | 4 -> bxc
+            | 5 -> out
+            | 6 -> bdv
+            | 7 -> cdv
+            | _ -> failwith "Invalid opcode"
+        
+        operator computer operand
+        |> runProgramStep
+
+parse example |> runProgramStep
+
+#!fsharp
+
+let part1 input =
+    parse input
+    |> runProgramStep
+    |> fun computer -> computer.Output
+    |> List.map string
+    |> String.concat ","
+
+part1 example
+
+#!fsharp
+
+part1 input
+
+#!fsharp
+
+// todo: too slow, will never complete.
+// another approach is needed
+
+let example2 = GetExample 17 2
+
+let part2 input =
+    let computer = parse input
+    let program = computer.Program |> List.ofArray
+    Seq.initInfinite id
+    |> Seq.map (fun i -> { computer with A = i })
+    |> Seq.map (fun computer -> runProgramStep computer)
+    |> Seq.find (fun c -> program = computer.Output)
+
+part2 example

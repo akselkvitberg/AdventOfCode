@@ -1,0 +1,44 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 9
+input
+
+#!fsharp
+
+let processInput input =
+
+    let rec processGarbage garbageChars list =
+        match list with 
+        | [] -> garbageChars, []
+        | '!'::_::rest -> processGarbage garbageChars rest
+        | '>'::rest -> garbageChars, rest
+        | _::rest -> processGarbage (garbageChars+1) rest
+
+    let rec proc groupLevel groups garbageChars list =
+        match list with 
+        | [] -> groups, garbageChars
+        | '!'::_::rest -> proc groupLevel groups garbageChars rest
+        | '<'::rest ->    
+            let garbageChars, rest = (processGarbage garbageChars rest)
+            proc groupLevel groups garbageChars rest
+        | '>'::rest ->    proc groupLevel groups garbageChars rest
+        | '{'::rest ->    proc (groupLevel+1) (groups+groupLevel) garbageChars rest
+        | '}'::rest ->    proc (groupLevel-1) groups garbageChars rest
+        | x::rest ->      proc groupLevel groups garbageChars rest
+
+    input
+    |> List.ofSeq
+    |> proc 1 0 0
+
+processInput "{{<a!>},{<a!>},{<a!>},{<ab>}}"
+
+#!fsharp
+
+processInput input

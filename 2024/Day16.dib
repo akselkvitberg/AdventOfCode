@@ -1,0 +1,190 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"},{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+let input = GetData 16
+let example = GetExample 16 1
+example
+
+#!fsharp
+
+let parse input = 
+    let points = 
+        input
+        |> GetLines
+        |> Seq.mapi (fun y l -> l |> Seq.mapi (fun x c -> (x, y), c))
+        |> Seq.collect id
+        |> Seq.filter (fun (_, c) -> c <> '#')
+        |> Map.ofSeq
+
+    let start = Map.findKey (fun k v -> v = 'S') points
+    let finish = Map.findKey (fun k v -> v = 'E') points
+    let nodes = Map.keys points |> Set.ofSeq
+    
+    start, finish, nodes
+
+parse example
+
+#!fsharp
+
+// Implemention of an immutable priority queue using a leftist heap
+
+type HeapNode<'T> =
+    | Empty
+    | Node of value: 'T * left: HeapNode<'T> * right: HeapNode<'T>
+
+let rec private merge<'T when 'T : comparison> (heap1: HeapNode<'T>) (heap2: HeapNode<'T>) : HeapNode<'T> =
+    match heap1, heap2 with
+    | Empty, _ -> heap2 // if one of the heaps is empty, return the other one
+    | _, Empty -> heap1 // if one of the heaps is empty, return the other one
+    | Node (value1, left1, right1), Node (value2, _, _) when value1 <= value2 ->
+        let mergedRight = merge right1 heap2
+        Node (value1, mergedRight, left1)
+    | _, _ -> 
+        merge heap2 heap1
+
+let push<'T when 'T : comparison> (value: 'T) (heap: HeapNode<'T>) : HeapNode<'T> =
+    merge (Node (value, Empty, Empty)) heap
+
+let pop<'T when 'T : comparison> (heap: HeapNode<'T>) : 'T option * HeapNode<'T> =
+    match heap with
+    | Empty -> None, Empty
+    | Node (value, left, right) -> (Some value), merge left right
+
+let priorityQueueFromList<'T when 'T : comparison> (values: 'T list) : HeapNode<'T> =
+    List.fold (fun acc value -> push value acc) Empty values
+
+#!fsharp
+
+type Direction = Up | Down | Left | Right
+
+let getPossibleMoves (x, y) = function
+    | Up    -> [ (x, y-1, Up, 1);    (x-1, y, Left, 1001); (x+1, y, Right, 1001) ]
+    | Down  -> [ (x, y+1, Down, 1);  (x-1, y, Left, 1001); (x+1, y, Right, 1001) ]
+    | Left  -> [ (x-1, y, Left, 1);  (x, y-1, Up, 1001);   (x, y+1, Down, 1001) ]
+    | Right -> [ (x+1, y, Right, 1); (x, y-1, Up, 1001);   (x, y+1, Down, 1001) ]
+
+#!fsharp
+
+let dijkstra ((startX:int,startY:int), destination, (nodes: Set<int*int>)) =
+
+    let rec visitNextNode unvisited visited =
+        let head, unvisited = unvisited |> pop
+
+        match head with
+        | None -> failwith "No path found"
+        | Some (cost, node, direction, previousNode) ->
+            let visited' = Map.add (node, direction) (cost, previousNode) visited // mark the node as visited
+            if node = destination 
+            then cost, visited' // if we reached the destination, return the cost
+            else
+                let unvisited' =
+                    getPossibleMoves node direction // get all possible moves
+                    |> List.filter (fun (x,y,dir,_) -> Set.contains (x,y) nodes) // only consider nodes that are in the map
+                    |> List.filter (fun (x,y,dir,_) -> not (Map.containsKey ((x,y), direction) visited)) // only consider nodes that have not been visited
+                    |> List.fold (fun acc (x,y, direction', cost') -> acc |> push (cost + cost', (x,y), direction', Some (node, direction))) unvisited // add the new nodes to the queue
+                
+            
+                visitNextNode unvisited' visited' // continue with the next node
+    
+    visitNextNode (priorityQueueFromList [ (0, (startX, startY), Right, None) ]) Map.empty
+
+dijkstra (parse example)
+
+#!fsharp
+
+dijkstra (parse input) |> fst
+
+#!markdown
+
+The following part is not working and full of compile errors...
+
+#!fsharp
+
+let rec retractSteps (graph:Map<(int * int) * Direction,int * option<(int * int) * Direction>>) (seen: Set<(int*int)*Direction>) node = 
+    printfn "%A" node
+    match graph.TryFind node with
+    | None -> []
+    | Some (cost, None, direction) -> [node]
+    | Some (cost, Some previousNode, direction) when (Set.contains (previousNode, direction) seen) -> 
+        []
+    | Some (cost, Some previousNode, direction) -> 
+        (retractSteps graph Set.empty (previousNode, direction))
+
+let part2 input =
+    let (start, destination, graph ) = parse input
+    let (cost, data) = dijkstra (start, destination, graph)
+    retractSteps data Set.empty (destination, Up)
+
+part2 example
+    
+
+#!fsharp
+
+let getPossibleMovesReverse (x, y) = function
+    | Down ->   [ (x, y-1, Down, 1);    (x-1, y, Left, 1001); (x+1, y, Right, 1001) ]
+    | Up  ->    [ (x, y+1, Up, 1);  (x-1, y, Left, 1001); (x+1, y, Right, 1001) ]
+    | Right  -> [ (x-1, y, Right, 1);  (x, y-1, Up, 1001);   (x, y+1, Down, 1001)  ]
+    | Left ->   [ (x+1, y, Left, 1); (x, y-1, Up, 1001);   (x, y+1, Down, 1001)  ]
+
+#!fsharp
+
+let rec getAllBestPathPositions graph visited queue =
+    match queue with
+    | [] -> visited
+    | node :: rest when Set.contains node visited -> getAllBestPathPositions graph visited rest
+    | (position, direction) :: rest ->
+        printfn "Visiting %A" (position, direction)
+        let neighbors = 
+            getPossibleMovesReverse position direction
+            |> List.filter (fun (x,y,dir,_) -> Map.containsKey ((x,y),dir) graph)
+            |> List.map (fun (x,y,dir, cost) -> 
+                printfn "%A %d" (x,y,dir,cost) (graph[(position, direction)] - graph[(x,y),dir])
+                (x,y,dir,cost)
+            )
+            |> List.filter (fun (x,y,dir, cost) -> 
+                graph[(position, direction)] - graph[(x,y),dir] = cost
+            )
+            |> List.map (fun (x,y,dir,_) -> (x,y), dir)
+        
+        let newQueue = neighbors @ rest
+        let newVisited = Set.add (position, direction) visited
+
+        getAllBestPathPositions graph newVisited newQueue
+
+let part2 input =
+    let (start, destination, graph ) = parse input
+    let (cost, data) = dijkstra (start, destination, graph)
+    let data = data |> Map.map (fun _ (cost, _) -> cost)
+    getAllBestPathPositions data Set.empty [ (destination, Up); (destination, Down); (destination, Left); (destination, Right) ]
+
+part2 example
+
+#!fsharp
+
+let rec DFS (graph: Map<(int*int)*Direction,int>) visited (remainings: (Position*Direction) list) =
+    match remainings with
+    | [] -> visited
+    | point :: restpoints when Set.contains point visited -> DFS graph visited restpoints
+    | (p1, direction) :: t ->
+        let neighbors =
+            getPossibleMovesReverse p1 direction
+            |> List.filter (fun (x,y,dir,_) -> Map.containsKey ((x,y),dir) graph)
+            |> List.filter (fun (x,y,dir, distance) -> graph[p1, direction] - graph[(x,y),dir] = distance)
+            |> List.map (fun (x,y,dir,_) -> (x,y), dir)
+
+        let newneighbors = List.append neighbors t
+        newneighbors |> DFS graph (Set.add (p1, direction) visited)
+
+let part2 input =
+    let (start, destination, graph ) = parse input
+    let (cost, data) = dijkstra (start, destination, graph)
+    let data = data |> Map.map (fun _ (cost, _) -> cost)
+    DFS data Set.empty [ (destination, Up); (destination, Down); (destination, Left); (destination, Right) ]
+
+part2 example
+    //|> fun (cost, graph) -> DFS graph Set.empty endingsDirections
