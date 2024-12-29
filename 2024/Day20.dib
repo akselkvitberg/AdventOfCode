@@ -1,0 +1,226 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"},{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+let input = GetData 20
+let example = GetExample 20 1 |> _.Replace("<em>", "").Replace("</em>", "")
+example
+
+#!fsharp
+
+let parse input = 
+    let points = 
+        input
+        |> GetLines
+        |> Seq.mapi (fun y l -> l |> Seq.mapi (fun x c -> (x, y), c))
+        |> Seq.collect id
+        |> Seq.filter (fun (_, c) -> c <> '#')
+        |> Map.ofSeq
+
+    let start = Map.findKey (fun k v -> v = 'S') points
+    let finish = Map.findKey (fun k v -> v = 'E') points
+    let nodes = Map.keys points |> Set.ofSeq
+    
+    start, finish, nodes
+
+parse example
+
+#!markdown
+
+# Todo: This does not need dijkstra, just a simple dfs
+
+#!fsharp
+
+// Implemention of an immutable priority queue using a leftist heap
+
+type HeapNode<'T> =
+    | Empty
+    | Node of value: 'T * left: HeapNode<'T> * right: HeapNode<'T>
+
+let rec private merge<'T when 'T : comparison> (heap1: HeapNode<'T>) (heap2: HeapNode<'T>) : HeapNode<'T> =
+    match heap1, heap2 with
+    | Empty, _ -> heap2 // if one of the heaps is empty, return the other one
+    | _, Empty -> heap1 // if one of the heaps is empty, return the other one
+    | Node (value1, left1, right1), Node (value2, _, _) when value1 <= value2 ->
+        let mergedRight = merge right1 heap2
+        Node (value1, mergedRight, left1)
+    | _, _ -> 
+        merge heap2 heap1
+
+let push<'T when 'T : comparison> (value: 'T) (heap: HeapNode<'T>) : HeapNode<'T> =
+    merge (Node (value, Empty, Empty)) heap
+
+let pop<'T when 'T : comparison> (heap: HeapNode<'T>) : 'T option * HeapNode<'T> =
+    match heap with
+    | Empty -> None, Empty
+    | Node (value, left, right) -> (Some value), merge left right
+
+let priorityQueueFromList<'T when 'T : comparison> (values: 'T list) : HeapNode<'T> =
+    List.fold (fun acc value -> push value acc) Empty values
+
+#!fsharp
+
+let getPossibleMoves (x, y) = 
+    [
+        (x, y - 1)
+        (x, y + 1)
+        (x - 1, y)
+        (x + 1, y)
+    ]    
+
+#!fsharp
+
+let findShortestPath (start, destination, (nodes: Set<int*int>)) =
+
+    let rec visitNextNode unvisited visited =
+        let head, unvisited = unvisited |> pop
+
+        match head with
+        | None -> failwith "No path found"
+        | Some (cost,node, path) when node = start -> path, visited |> Map.add node cost // we don't need to compute any more, because all paths will be longer
+        | Some (cost, node, path) -> 
+            let toQueue = 
+                getPossibleMoves node
+                |> List.filter (fun n -> nodes.Contains n)
+                |> List.filter (fun n -> not (visited |> Map.containsKey n))
+                |> List.map (fun n -> n)
+                
+            let unvisited = List.fold (fun queue n -> push (cost + 1, n, n::path) queue) unvisited toQueue
+            let visited = Map.add node (cost + 1) visited
+
+            visitNextNode unvisited visited
+    
+    visitNextNode ([0, destination, [destination]] |> priorityQueueFromList) Map.empty
+
+findShortestPath (parse example)
+
+#!fsharp
+
+let getPossibleShortcuts (x,y) = 
+    [
+        (x, y - 2)
+        (x, y + 2)
+        (x - 2, y)
+        (x + 2, y)
+        (x - 1, y - 1)
+        (x + 1, y + 1)
+        (x - 1, y + 1)
+        (x + 1, y - 1)
+    ]
+
+let part1 input saving = 
+    let start, destination, nodes = parse input
+    let path, costs = findShortestPath (start, destination, nodes)
+
+    let findShortcut (x,y) =
+        let cost = costs[x,y]
+        getPossibleShortcuts (x,y)
+        |> List.choose costs.TryFind
+        |> List.map (fun c -> cost - 2 - c)
+        |> List.filter (fun c -> c >= saving)
+
+    path
+    |> List.collect (fun node -> findShortcut node)
+    |> List.length
+
+part1 example 12
+
+#!fsharp
+
+part1 input 100
+
+#!fsharp
+
+let manhattanDistance (x1, y1) (x2, y2) = abs (x1 - x2) + abs (y1 - y2)
+
+let part1x input saving = 
+    let start, destination, nodes = parse input
+    let path, costs = findShortestPath (start, destination, nodes)
+
+    let rec findCheats path =
+        match path with
+        | [] -> 0
+        | head :: path -> 
+            path
+            |> List.map (fun node -> 
+                let d = manhattanDistance head node
+                d, costs.[head] - d - costs.[node])
+            |> List.filter (fun (distance, c) -> c = saving && distance = 2)
+            |> List.length
+            |> fun l -> l + findCheats path
+    
+    findCheats path
+
+part1x example 4
+
+#!fsharp
+
+part1x input 100
+
+#!fsharp
+
+let manhattanDistance (x1, y1) (x2, y2) = abs (x1 - x2) + abs (y1 - y2)
+
+let part2 input saving = 
+    let start, destination, nodes = parse input
+    let path, costs = findShortestPath (start, destination, nodes)
+
+    let rec findCheats path =
+        match path with
+        | [] -> 0
+        | head :: path -> 
+            path
+            |> List.map (fun node -> 
+                let d = manhattanDistance head node
+                d, costs.[head] - d - costs.[node])
+            |> List.filter (fun (distance, c) -> c = saving && distance <= 20)
+            |> List.length
+            |> fun l -> l + findCheats path
+    
+    findCheats path
+
+part2 example 50
+
+#!fsharp
+
+part2x input 100
+
+#!fsharp
+
+let diamond x y size = 
+    [
+        for y in y - size .. y + size do
+            let sub = size - abs y
+            for x in x - sub .. x + sub do
+                yield x, y
+        
+    ]
+
+#!fsharp
+
+let part2 input saving =
+    let start, destination, nodes = parse input
+    let path, costs = findShortestPath (start, destination, nodes)
+
+    let findShortcut (x,y) =
+        let cost = costs[x,y]
+        diamond x y 20
+        |> List.choose (fun node -> 
+            let distance = manhattanDistance (x,y) node
+            costs.TryFind(node)
+            |> Option.map (fun c -> cost - distance - c))
+        |> List.filter (fun c -> c = saving)
+
+    path
+    |> List.collect (fun node -> findShortcut node)
+    |> List.length
+
+part2 example 50
+
+#!fsharp
+
+part2 input 100
