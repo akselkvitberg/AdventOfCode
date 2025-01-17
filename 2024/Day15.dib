@@ -8,11 +8,12 @@
 open Utils
 let input = GetData 15
 let example = GetExample 15 1
+let example2 = GetExample 15 7
 example
 
 #!fsharp
 
-type Item = Empty | Wall | Box | Robot
+type Item = Empty | Wall | Box | LeftBox | RightBox | Robot
 type Direction = Up | Down | Left | Right
 
 let parse input = 
@@ -31,6 +32,8 @@ let parse input =
             | '.' -> Empty
             | '#' -> Wall
             | 'O' -> Box
+            | '[' -> LeftBox
+            | ']' -> RightBox
             | '@' -> Robot
             | _ -> failwith "invalid character")
         |> Map.filter (fun _ v -> v <> Empty)
@@ -57,19 +60,26 @@ parse example
 #!fsharp
 
 let drawMap (grid: Map<(int*int),Item>) =
-    let max = 
+    let maxX = 
         Map.keys grid
         |> Seq.map fst
         |> Seq.max
     
+    let maxY = 
+        Map.keys grid
+        |> Seq.map snd
+        |> Seq.max
+    
     [|
-        for y in 0..max do
+        for y in 0..maxY do
         [|
-            for x in 0..max do
+            for x in 0..maxX do
                 match Map.tryFind (x,y) grid with
                 | Some Wall -> '#'
                 | Some Box -> 'O'
                 | Some Robot -> '@'
+                | Some LeftBox -> '['
+                | Some RightBox -> ']'
                 | _ -> '.'
         |] |> String
     |] 
@@ -93,34 +103,17 @@ let rec processMove grid (x,y) direction =
 
     let nextPos = x + dx, y + dy
 
-    //printfn "Moving %A to %A" direction nextPos
     match Map.tryFind (x,y) grid with
-    | Some Wall -> 
-        //printfn "Wall found"
-        None // Cannot move
+    | Some Wall -> None // Cannot move
 
     | Some item -> // try to move this box
-        //printfn "Item found"
-        match processMove grid nextPos direction with
-        | None -> 
-            //printfn "Item cannot move"
-            None // Cannot move the box
-        | Some (grid, position) ->
-            //printfn "Item moved"
-            Some (
-                grid
-                |> Map.remove (x,y)
-                |> Map.add nextPos item, nextPos
-            )
-    // | Some Robot -> // move
-    //     //printfn "Moving"
-    //     Some (
-    //         grid
-    //         |> Map.remove (x,y)
-    //         |> Map.add nextPos Robot, nextPos
-    //     )
+        processMove grid nextPos direction
+        |> Option.map (fun (grid, _) ->
+            grid
+            |> Map.remove (x,y)
+            |> Map.add nextPos item, nextPos
+        )
     | None -> 
-        //printfn "Nothing found"
         Some (grid, nextPos)
 
 let grid, _, robot = parse example
@@ -154,3 +147,88 @@ part1 example
 #!fsharp
 
 part1 input
+
+#!fsharp
+
+let widenInput (input:string) =
+    input
+        .Replace(".", "..")
+        .Replace("#", "##")
+        .Replace("O", "[]")
+        .Replace("@", "@.")
+
+example2 |> widenInput |> parse |> fun (g, _, _) -> drawMap g
+
+#!fsharp
+
+let rec processWideMove grid (x,y) direction =
+    let (x1, y1) = 
+        match direction with
+        | Up    -> x, y-1
+        | Down  -> x, y+1
+        | Left  -> x-1, y
+        | Right -> x+1, y
+
+    let x2 = 
+        match direction, Map.tryFind (x1,y1) grid with
+        | Up, Some LeftBox
+        | Down, Some LeftBox -> x1+1
+        | Up, Some RightBox
+        | Down, Some RightBox -> x1-1
+        | _ -> x1
+
+    match Map.tryFind (x,y) grid with
+    | Some Wall -> 
+        None
+
+    | Some item ->
+        processWideMove grid (x1,y1) direction
+        |> Option.bind (fun (grid,_) -> processWideMove grid (x2,y1) direction)
+        |> Option.map (fun (grid,_) -> 
+            grid
+            |> Map.remove (x,y)
+            |> Map.add (x1,y1) item, (x1,y1)
+        )
+    | None -> 
+        Some (grid, (x1,y1))
+
+"""
+###########
+#.......[]#
+#...[][]..#
+#....[]...#
+#....@....#
+
+^
+"""
+|> parse
+|> fun (g,a,r) -> drawMap g; (g,a,r)
+|> fun (g, _, r) -> processWideMove g r Up
+|> function Some (g,_) -> drawMap g | None -> printfn "No movement"
+//example2 |> widenInput |> parse |> fun (g, _, r) -> processWideMove g r Left |> function Some (g, _) -> drawMap g
+
+#!fsharp
+
+let part2 input =
+
+    let grid, instructions, robot = widenInput input |> parse
+
+    let (grid, robot) =
+        instructions
+        |> List.fold (fun (grid, position) instruction -> 
+            match processWideMove grid position instruction with
+            | Some (grid, position) -> (grid, position)
+            | None -> (grid, position)
+            ) (grid, robot)
+
+    grid
+    |> Map.filter (fun _ v -> v = LeftBox)
+    |> Map.toSeq
+    |> Seq.map (fun ((x,y), box) -> x + y * 100)
+    |> Seq.sum
+
+part2 example
+
+#!fsharp
+
+part2 input
