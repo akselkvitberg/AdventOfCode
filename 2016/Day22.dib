@@ -1,0 +1,81 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"name":"csharp","languageName":"C#","aliases":["c#","cs"]},{"name":"fsharp","languageName":"fsharp"},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 22 |> GetLines
+input[..4]
+
+#!fsharp
+
+let parse input =
+    input
+    |> Array.map (fun line -> Matches "(\d+)" line)
+    |> Array.choose (function | [ Int x; Int y; Int size; Int used; Int avail; Int useP ] -> Some (x, y, size, used, avail, useP)
+                              | _ -> None)
+
+parse input |> Array.take 5
+
+#!fsharp
+
+let part1 input = 
+    let grid = parse input
+    [
+        for i in 0 .. grid.Length-1 do
+        for j in 0 .. grid.Length-1 do
+            if i <> j then
+                let (x1,y1,size1,used1,avail1,usep1) = grid[i]
+                let (x2,y2,size2,used2,avail2,usep2) = grid[j]
+                if used1 > 0 && used1 <= avail2 then
+                    yield (i, j)
+    ]
+    |> List.length
+
+part1 input
+
+#!fsharp
+
+type Queue<'a> = 'a list * 'a list
+let emptyQueue = [],[]
+let enqueue item ((fs, bs):Queue<'a>) = item::fs, bs
+let enqueueMany items queue = List.fold (fun acc item -> enqueue item acc) queue items
+let rec dequeue queue =
+    match queue with
+    | [],[] -> None, ([],[])
+    | fs, [] -> dequeue ([],List.rev fs)
+    | fs, b::bs -> Some b, (fs, bs)
+
+#!fsharp
+
+type Node = {
+    Size: int
+    Used: int
+}
+let part2 input =
+    let grid = parse input |> Array.map (fun (x,y,size,used,avail,usep) -> (x, y), {Size = size; Used = used}) |> Map.ofArray
+    let empty = grid |> Map.findKey (fun _ node -> node.Used = 0)
+    let maxX = grid |> Map.keys |> Seq.map fst |> Seq.max
+    let goal = (maxX, 0)
+
+    let rec search queue seenStates =
+        match dequeue queue with
+        | None, _ -> failwith "No path found"
+        | Some (steps, _, (0,0)), _ -> steps
+        | Some (_, empty, goal), queue when Set.contains (empty, goal) seenStates -> 
+            search queue seenStates
+        | Some (steps, empty, goal), queue -> 
+            let (x, y) = empty
+            let swapNodes = 
+                [ (x+1, y); (x-1, y); (x, y+1); (x, y-1) ]
+                |> List.filter (fun p -> Map.containsKey p grid)
+                |> List.filter (fun p -> grid[empty].Size >= grid[p].Used)
+                |> List.map (fun p -> (steps + 1, p, if p = goal then empty else goal))
+            search (enqueueMany swapNodes queue) (seenStates.Add((empty, goal)))
+    
+    search (enqueue (0, empty, goal) emptyQueue) Set.empty
+
+part2 input
