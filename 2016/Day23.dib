@@ -1,0 +1,105 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp","languageName":"C#","aliases":["c#","cs"]},{"name":"fsharp","languageName":"fsharp"},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 23 |> GetLines
+input[..5]
+
+#!fsharp
+
+let example = GetLines """
+cpy 2 a
+tgl a
+tgl a
+tgl a
+cpy 1 a
+dec a
+dec a
+"""
+
+#!fsharp
+
+type Pointer = Register of string | Value of int
+
+type Instruction =
+    | Copy of Pointer * Pointer
+    | Increase of Pointer
+    | Decrease of Pointer
+    | JumpNotZero of Pointer * Pointer
+    | Toggle of Pointer
+
+#!fsharp
+
+let parse = 
+    function
+    | Regex "cpy (-?\d+) (.+)" [Int value; register] -> Copy(Value(value), Register register)
+    | Regex "cpy (.+) (.+)" [source; register] -> Copy(Register(source), Register register)
+    | Regex "inc (.+)" [register] -> Increase(Register register)
+    | Regex "dec (.+)" [register] -> Decrease(Register register)
+    | Regex "jnz (-?\d+) (-?\d+)" [Int value; Int offset] -> JumpNotZero(Value(value), Value offset)
+    | Regex "jnz (.+) (-?\d+)" [register; Int offset] -> JumpNotZero(Register(register), Value offset)
+    | Regex "jnz (-?\d+) (.+)" [Int value; register] -> JumpNotZero(Value(value), Register register)
+    | Regex "tgl (.+)" [offset] -> Toggle(Register(offset))
+    | a -> failwithf "Unexpected %s" a
+
+example |> Seq.map parse
+
+#!fsharp
+
+let toggleInstruction PC (inputs:Instruction array) offset =
+    let target = PC + offset
+    inputs |> Array.mapi (fun i x ->
+        if i = target then
+            match x with
+            | Increase x -> Decrease x
+            | Decrease x -> Increase x
+            | Toggle x -> Increase x
+            | JumpNotZero (a,b) -> (Copy (a,b))
+            | Copy (a,b) -> (JumpNotZero (a,b))
+        else x
+        )
+
+#!fsharp
+
+let rec runCycle (registers:Map<string, int>) (inputs:Instruction array) PC =
+    if PC >= inputs.Length
+    then registers
+    else
+        let input = inputs[PC]
+        match input with
+        | Copy(Value value, Register register) -> runCycle (registers.Add(register, value)) inputs (PC + 1)
+        | Copy(Register pointer, Register register) -> runCycle (registers.Add(register, registers[pointer])) inputs (PC + 1)
+        | Increase(Register register) -> runCycle (registers.Change(register, function | Some v -> Some (v + 1) | None -> Some 1)) inputs (PC + 1)
+        | Decrease(Register register) -> runCycle (registers.Change(register, function | Some v -> Some (v - 1) | None -> Some -1)) inputs (PC + 1)
+        | JumpNotZero(Register(register), Value offset) -> if registers[register] = 0 then runCycle registers inputs (PC + 1) 
+                                                                      else runCycle registers inputs (PC + offset)
+        | JumpNotZero(Value(value), Value offset) -> if value = 0 then runCycle registers inputs (PC + 1) 
+                                                                      else runCycle registers inputs (PC + offset)
+        | JumpNotZero(Value(value), Register register) -> if value = 0 then runCycle registers inputs (PC + 1) 
+                                                                  else runCycle registers inputs (PC + registers[register])
+        | Toggle(Register register) ->
+            let offset = registers[register]
+            runCycle registers (toggleInstruction PC inputs offset) (PC + 1)
+        | _ -> failwithf "Unexpected instruction %A at position %d" input PC
+
+let testregisters = Map.empty.Add("a", 0).Add("b", 0).Add("c", 0).Add("d", 0)
+
+runCycle testregisters (example |> Array.map parse) 0
+
+#!fsharp
+
+let registers = Map.empty.Add("a", 7).Add("b", 0).Add("c", 0).Add("d", 0)
+
+runCycle registers (input |> Array.map parse) 0
+
+#!fsharp
+
+let registers2 = Map.empty.Add("a", 12).Add("b", 0).Add("c", 0).Add("d", 0)
+
+// this takes forever. Optimization needed.
+runCycle registers2 (input |> Array.map parse) 0
