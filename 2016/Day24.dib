@@ -1,0 +1,139 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp","languageName":"C#","aliases":["c#","cs"]},{"name":"fsharp","languageName":"fsharp"},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 24
+let example = GetExample 24 1
+example
+//input
+
+#!fsharp
+
+type CellType =
+    | Wall
+    | Space
+    | Target of int
+
+type Grid = Map<(int * int), CellType>
+
+let parse input =
+    input
+    |> GetLines
+    |> Array.mapi (fun y line -> 
+        line.ToCharArray()
+        |> Array.mapi (fun x c ->
+            (x,y), 
+            match c with
+            | '#' -> Wall
+            | '.' -> Space
+            | i -> Target (int (string i))))
+    |> Array.collect id
+    |> Map.ofArray
+//parse example
+
+#!fsharp
+
+type Queue<'a> = 'a list * 'a list
+let emptyQueue = [],[]
+let enqueue item ((fs, bs):Queue<'a>) = item::fs, bs
+let enqueueMany items queue = List.fold (fun q item -> enqueue item q) queue items
+let rec dequeue queue =
+    match queue with
+    | [],[] -> None, ([],[])
+    | fs, [] -> dequeue ([],List.rev fs)
+    | fs, b::bs -> Some b, (fs, bs)
+
+#!fsharp
+
+let getDistancesToTargets (grid: Grid) from =
+    let rec search queue visited (acc: (int * int) list) =
+        match dequeue queue with
+        | None, _ -> acc
+        | Some (pos, steps), queue -> 
+            let x, y = pos
+            let cell = grid.[pos]            
+            match cell with
+            | Wall -> search queue visited acc
+            | Space when Set.contains pos visited -> search queue visited acc
+            | _ ->
+                let acc = 
+                    match cell with
+                    | Target id when pos <> from -> (id, steps)::acc
+                    | _ -> acc
+                let nextSteps = [x, y+1; x+1, y; x, y-1; x-1, y] |> List.filter (fun p -> grid.ContainsKey p)
+                let queue' = enqueueMany (List.map (fun p -> p, steps + 1) nextSteps) queue
+                let visited' = visited |> Set.add (x, y)
+                search queue' visited' acc
+
+    search (enqueue (from, 0) emptyQueue) Set.empty []
+    |> List.rev
+    |> List.distinctBy fst
+
+getDistancesToTargets (parse example) (1,1)
+
+#!fsharp
+
+let getAllDistances (grid: Grid) =
+    let targets = 
+        grid
+        |> Map.toList
+        |> List.choose (fun (pos, cell) ->
+            match cell with
+            | Target id -> Some (id, pos)
+            | _ -> None)
+        |> List.map (fun (id, pos) -> id, getDistancesToTargets grid pos)
+
+    targets
+
+getAllDistances (parse example)
+
+#!fsharp
+
+getAllDistances (parse input)
+
+#!fsharp
+
+let getDistance distances fromId toId =
+    distances
+    |> Map.find fromId
+    |> List.find (fun (id, _) -> id = toId)
+    |> snd
+
+let rec permutations list =
+    match list with
+    | [] -> [ [] ]
+    | xs -> [ for i in 0 .. xs.Length - 1 do
+                for perm in permutations (List.take i xs @ List.skip (i+1) xs) do
+                    yield xs.[i] :: perm ]
+
+let solveTSP distances =
+    let targetIds = distances |> Map.toList |> List.map fst |> List.sort
+    let startId = 0
+    let others = targetIds |> List.filter ((<>) startId)
+    let perms = permutations others
+    perms
+    |> List.map (fun perm ->
+        let route = startId :: perm
+        let total =
+            route
+            |> List.pairwise
+            |> List.sumBy (fun (a, b) -> getDistance distances a b)
+        route, total)
+    |> List.minBy snd
+
+// Usage:
+let part1 input =
+    getAllDistances (parse input)
+    |> Map.ofList
+    |> solveTSP
+
+part1 example
+
+#!fsharp
+
+part1 input
