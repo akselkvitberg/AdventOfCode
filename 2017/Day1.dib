@@ -1,6 +1,6 @@
 #!meta
 
-{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"name":"fsharp","languageName":"fsharp"},{"name":"csharp","languageName":"C#","aliases":["c#","cs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
 
 #!fsharp
 
@@ -13,22 +13,19 @@ input
 #!fsharp
 
 input
-|> fun i -> i + i[0].ToString()
-|> Seq.map (Char.GetNumericValue >> int)
+|> Seq.map charToInt
 |> Seq.pairwise
 |> Seq.where (fun (a,b) -> a = b )
-|> Seq.map fst
-|> Seq.sum
+|> Seq.sumBy fst
 
 #!fsharp
 
 let numbers =
     input.ToCharArray()
-    |> Array.map (Char.GetNumericValue >> int)
+    |> Array.map charToInt
 let half = numbers.Length / 2
 
 numbers
-|> Seq.zip (numbers |> Seq.append (numbers |> Seq.skip half))
+|> Seq.zip (Seq.append numbers[half..] numbers[0..half])
 |> Seq.where (fun (a,b) -> a = b )
-|> Seq.map fst
-|> Seq.sum
+|> Seq.sumBy fst

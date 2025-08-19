@@ -1,6 +1,6 @@
 #!meta
 
-{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"},{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"fsharp"},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
 
 #!fsharp
 
@@ -17,7 +17,7 @@ let getRing =
     float 
     >> sqrt
     >> (+) -1.0
-    >> fun x -> x / 2.0
+    >> (*) 0.5
     >> ceil
     >> int
 
@@ -38,4 +38,52 @@ getPosition input
 
 #!fsharp
 
-// todo: part 2
+type direction = Up | Down | Left | Right
+
+let getDirection direction steps stepSequence =
+    if steps = 0 then
+        let steps = Seq.head stepSequence
+        let stepSequence = Seq.tail stepSequence
+        let direction = 
+            match direction with
+            | Up -> Left
+            | Down -> Right
+            | Left -> Down
+            | Right -> Up
+        direction, steps-1, stepSequence
+    else
+        direction, steps-1, stepSequence
+
+let getNeighbourCells (x, y) grid =
+    [(x-1, y-1); (x, y-1); (x+1, y-1);
+     (x-1, y);           (x+1, y);
+     (x-1, y+1); (x, y+1); (x+1, y+1)]
+     |> List.choose (fun pos -> Map.tryFind pos grid)
+     |> List.sum
+     |> max 1
+
+let rec step (x, y) direction steps stepSequence grid stoppingCondition =
+        let direction, steps, stepSequence = getDirection direction steps stepSequence
+
+        let number = getNeighbourCells (x, y) grid
+        if number > stoppingCondition then number
+        else 
+            let grid = Map.add (x,y) (number) grid
+
+            let pos = 
+                match direction with
+                | Up -> (x, y - 1)
+                | Down -> (x, y + 1)
+                | Left -> (x - 1, y)
+                | Right -> (x + 1, y)
+
+            step pos direction steps stepSequence grid stoppingCondition
+
+let createGrid input =
+    step (0, 0) Right 1 (Seq.initInfinite (fun i -> i / 2 + 1) |> Seq.skip 1) Map.empty input
+
+createGrid 800
+
+#!fsharp
+
+createGrid input

@@ -1,6 +1,6 @@
 #!meta
 
-{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"name":"fsharp","languageName":"fsharp"},{"name":"csharp","languageName":"C#","aliases":["c#","cs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
 
 #!fsharp
 
@@ -12,10 +12,7 @@ input
 
 #!fsharp
 
-let parseLine line =
-    line
-    |> Split "\t"
-    |> Array.map int
+let parseLine = Split "\t" >> Array.map int
 
 let parse input =
     input
@@ -33,18 +30,15 @@ let checksum row =
 
 input
 |> parse
-|> Seq.map checksum
-|> Seq.sum
+|> Seq.sumBy checksum
 
 #!fsharp
 
 let getEvenlyDivisable row =
-    row
-    |> Seq.collect (fun a -> row |> Seq.map (fun b -> (a,b)) |> Seq.where(fun (a,b) -> a <> b && a % b = 0))
-    |> Seq.map (fun (a,b) -> a/b)
-    |> Seq.sum
+    Seq.allPairs row row
+    |> Seq.where(fun (a,b) -> a <> b && a % b = 0)
+    |> Seq.sumBy (fun (a,b) -> a / b)
 
 input
 |> parse
-|> Seq.map getEvenlyDivisable
-|> Seq.sum
+|> Seq.sumBy getEvenlyDivisable
