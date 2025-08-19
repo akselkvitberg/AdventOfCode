@@ -1,0 +1,85 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp","languageName":"C#","aliases":["c#","cs"]},{"name":"fsharp","languageName":"fsharp"},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!fsharp
+
+#load "util.fsx"
+open Utils
+
+let input = GetData 25 |> GetLines
+//input
+
+#!fsharp
+
+type Pointer = Register of string | Value of int
+
+type Instruction =
+    | Copy of Pointer * Pointer
+    | Increase of Pointer
+    | Decrease of Pointer
+    | JumpNotZero of Pointer * Pointer
+    | Output of Pointer
+
+#!fsharp
+
+let parse = 
+    function
+    | Regex "cpy (-?\d+) (.+)" [Int value; register] -> Copy(Value(value), Register register)
+    | Regex "cpy (.+) (.+)" [source; register] -> Copy(Register(source), Register register)
+    | Regex "inc (.+)" [register] -> Increase(Register register)
+    | Regex "dec (.+)" [register] -> Decrease(Register register)
+    | Regex "jnz (-?\d+) (-?\d+)" [Int value; Int offset] -> JumpNotZero(Value(value), Value offset)
+    | Regex "jnz (.+) (-?\d+)" [register; Int offset] -> JumpNotZero(Register(register), Value offset)
+    | Regex "jnz (-?\d+) (.+)" [Int value; register] -> JumpNotZero(Value(value), Register register)
+    | Regex "out (.+)" [register] -> Output(Register(register))
+    | a -> failwithf "Unexpected %s" a
+
+//input |> Seq.map parse
+
+#!fsharp
+
+let rec runCycle (registers:Map<string, int>) (inputs:Instruction array) PC =
+    seq {
+    if PC >= inputs.Length
+    then ()
+    else
+        let input = inputs[PC]
+        match input with
+        | Output(Register register) -> 
+            let output = registers[register];
+            yield output
+            yield! runCycle registers inputs (PC + 1);
+        | Copy(Value value, Register register) -> yield! runCycle (registers.Add(register, value)) inputs (PC + 1)
+        | Copy(Register pointer, Register register) -> yield! runCycle (registers.Add(register, registers[pointer])) inputs (PC + 1)
+        | Increase(Register register) -> yield! runCycle (registers.Change(register, function | Some v -> Some (v + 1) | None -> Some 1)) inputs (PC + 1)
+        | Decrease(Register register) -> yield! runCycle (registers.Change(register, function | Some v -> Some (v - 1) | None -> Some -1)) inputs (PC + 1)
+        | JumpNotZero(Register(register), Value offset) -> if registers[register] = 0 then yield! runCycle registers inputs (PC + 1) 
+                                                                      else yield! runCycle registers inputs (PC + offset)
+        | JumpNotZero(Value(value), Value offset) -> if value = 0 then yield! runCycle registers inputs (PC + 1) 
+                                                                      else yield! runCycle registers inputs (PC + offset)
+        | JumpNotZero(Value(value), Register register) -> if value = 0 then yield! runCycle registers inputs (PC + 1) 
+                                                                  else yield! runCycle registers inputs (PC + registers[register])
+        | _ -> failwithf "Unexpected instruction %A at position %d" input PC
+    }
+
+//let testregisters = Map.empty.Add("a", 0).Add("b", 0).Add("c", 0).Add("d", 0)
+
+//runCycle testregisters (input |> Array.map parse) 0
+
+#!fsharp
+
+let expectedOutput = Seq.initInfinite (fun i -> i % 2)
+
+let testForClockSignal a =
+    let initialRegisters = Map.empty.Add("a", a).Add("b", 0).Add("c", 0).Add("d", 0)
+    runCycle initialRegisters (input |> Array.map parse) 0
+    |> Seq.zip expectedOutput 
+    |> Seq.truncate 50
+    |> Seq.forall (fun (a, b) -> a = b)
+
+let part1 =
+    Seq.initInfinite id
+    |> Seq.find testForClockSignal
+
+part1
