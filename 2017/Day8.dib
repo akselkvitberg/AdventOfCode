@@ -1,6 +1,6 @@
 #!meta
 
-{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"name":"fsharp","languageName":"fsharp"},{"name":"csharp","languageName":"C#","aliases":["c#","cs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
 
 #!fsharp
 
@@ -67,9 +67,9 @@ let part2 input =
     |> GetLines
     |> Array.map parseInstruction
     |> Array.scan (fun acc i -> acc |> i ) Map.empty
-    |> Array.map (Map.toList)
-    |> Array.filter (fun x -> not x.IsEmpty)
-    |> Array.map (List.maxBy snd)
+    |> Array.map (Map.toArray)
+    |> Array.filter (fun x -> not Array.isEmpty x)
+    |> Array.map (Array.maxBy snd)
     |> Array.maxBy snd
     
 part2 example

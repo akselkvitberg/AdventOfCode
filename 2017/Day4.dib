@@ -1,6 +1,6 @@
 #!meta
 
-{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"name":"fsharp","languageName":"fsharp"},{"name":"csharp","languageName":"C#","aliases":["c#","cs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
 
 #!fsharp
 
@@ -16,23 +16,21 @@ let checkPassword wordProcessor password =
     password 
     |> Split " "
     |> Seq.countBy wordProcessor
-    |> Seq.forall (fun (key,count) -> count = 1)
+    |> Seq.forall (fun (_,count) -> count = 1)
 
 checkPassword id input[0], checkPassword id input[4]
 
 #!fsharp
 
 input
-|> Seq.map (checkPassword id)
-|> Seq.where id
+|> Seq.where (checkPassword id)
 |> Seq.length
 
 #!fsharp
 
 let sortLetters (word:string) =
-    word.ToCharArray() |> Array.sort |> String
+    word |> Seq.sort |> Seq.toArray
 
 input
-|> Seq.map (checkPassword sortLetters)
-|> Seq.where id
+|> Seq.where (checkPassword sortLetters)
 |> Seq.length
