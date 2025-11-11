@@ -1,8 +1,14 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
 #!fsharp
 
 open System.Security.Cryptography
 
-let input = File.ReadAllText "Inputs/4.txt"
+#load "../utils.fsx"
+open Utils
+let input = GetData 4
 
 #!fsharp
 

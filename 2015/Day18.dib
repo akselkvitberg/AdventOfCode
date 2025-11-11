@@ -1,11 +1,17 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
 #!fsharp
 
-let inputs = File.ReadAllLines "Inputs/18.txt"
+#load "../utils.fsx"
+open Utils
+let input = GetData 18 |> GetLines
 
 #!fsharp
 
 let grid = 
-    [| for row in inputs -> 
+    [| for row in input -> 
         [| for col in row -> 
             if col = '#' 
                 then true 

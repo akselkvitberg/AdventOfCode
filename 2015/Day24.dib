@@ -1,10 +1,16 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
 #!fsharp
 
-let input = [1;3;5;11;13;17;19;23;29;31;41;43;47;53;59;61;67;71;73;79;83;89;97;101;103;107;109;113] |> Seq.map uint64 |> Seq.toList
+#load "../utils.fsx"
+open Utils
+let input = 
+    GetData 24
+    |> Seq.map uint64 |> Seq.toList
 
 let QuantumEntanglement (list:uint64 list) = list |> Seq.reduce (*)
-
-groupWeight
 
 #!fsharp
 

@@ -5,7 +5,7 @@
 #!fsharp
 
 #r "nuget: SkiaSharp"
-#load "util.fsx"
+#load "../utils.fsx"
 open Utils
 open SkiaSharp
 let input = GetData 14
