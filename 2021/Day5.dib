@@ -1,10 +1,17 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
 #!fsharp
 
 open System.Text.RegularExpressions
 
 #!fsharp
 
-let lines = File.ReadAllLines("input/5.txt")
+#load "../utils.fsx"
+open Utils
+
+let lines = GetData 5 |> GetLines
 
 #!fsharp
 
