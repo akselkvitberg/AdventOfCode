@@ -26,7 +26,6 @@ let Area size =
     let lengths = [| size.W * size.H; size.W * size.L; size.H * size.L |]
     let sides = Seq.sum lengths
     sides * 2 + Seq.min lengths
-    
 
 #!fsharp
 

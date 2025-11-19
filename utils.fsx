@@ -56,15 +56,17 @@ let GetExample (day: int) (id: int) =
 
 /// Split a string by a character, removing empty entries
 let Split (character: string) (input: string) =
-    input.Split(character, StringSplitOptions.RemoveEmptyEntries)
+    input.Split(character, StringSplitOptions.RemoveEmptyEntries ||| StringSplitOptions.TrimEntries)
 
 /// Split input into lines, removing empty entries
 let GetLines (input: string) =
-    input.Trim().Split([| "\n"; "\r\n" |], StringSplitOptions.RemoveEmptyEntries)
+    input.Trim().Split([| "\n"; "\r\n" |], StringSplitOptions.RemoveEmptyEntries ||| StringSplitOptions.TrimEntries)
 
 /// Split input into blocks separated by double newlines
 let GetBlocks (input: string) =
-    input.Trim().Split([| "\n\n"; "\r\n\r\n" |], StringSplitOptions.RemoveEmptyEntries)
+    input
+        .Trim()
+        .Split([| "\n\n"; "\r\n\r\n" |], StringSplitOptions.RemoveEmptyEntries ||| StringSplitOptions.TrimEntries)
 
 /// Convert string to lowercase
 let ToLower (input: string) = input.ToLower()

@@ -1,0 +1,45 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"name":"csharp","languageName":"C#","aliases":["c#","cs"]},{"name":"fsharp","languageName":"fsharp"},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!fsharp
+
+#load "../utils.fsx"
+open Utils
+
+let input = GetData 11 |> Split ","
+input
+
+#!fsharp
+
+type HexPoint = { X: int; Y: int; Z: int }
+
+#!fsharp
+
+let move (point: HexPoint) direction =
+    match direction with
+    | "n" -> { point with Y = point.Y + 1; Z = point.Z - 1 }
+    | "ne" -> { point with X = point.X + 1; Z = point.Z - 1 }
+    | "se" -> { point with X = point.X + 1; Y = point.Y - 1 }
+    | "s" -> { point with Y = point.Y - 1; Z = point.Z + 1 }
+    | "sw" -> { point with X = point.X - 1; Z = point.Z + 1 }
+    | "nw" -> { point with X = point.X - 1; Y = point.Y + 1 }
+    | _ -> point
+
+#!fsharp
+
+let getDistance (point: HexPoint) =
+    (abs point.X + abs point.Y + abs point.Z) / 2
+
+#!fsharp
+
+input
+|> Array.fold move { X = 0; Y = 0; Z = 0 }
+|> getDistance
+
+#!fsharp
+
+input
+|> Array.scan move { X = 0; Y = 0; Z = 0 }
+|> Array.map getDistance
+|> Array.max

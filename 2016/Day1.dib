@@ -7,7 +7,7 @@
 #load "../utils.fsx"
 open Utils
 
-let input = GetData 1 |> Split ", "
+let input = GetData 1 |> Split ","
 input
 
 #!fsharp
@@ -18,6 +18,7 @@ let Parse (str:string) =
     match str[0], str[1..] with
     | 'L', a -> L (int a)
     | 'R', a -> R (int a)
+    | _ -> failwith ("Invalid instruction - must start with L or R - got " + str)
 
 let instructions = input |> Seq.map Parse |> Seq.toList
 
