@@ -1,13 +1,13 @@
 #!meta
 
-{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"},{"aliases":[],"languageName":"fsharp","name":"fsharp"}]}}
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"fsharp"},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
 
 #!fsharp
 
-#load "util.fsx"
+#load "../utils.fsx"
 open Utils
-let input = GetData 20
-let example = GetExample 20 1 |> _.Replace("<em>", "").Replace("</em>", "")
+let input = GetData 2024 20
+let example = GetExample 2024 20 1 |> _.Replace("<em>", "").Replace("</em>", "")
 example
 
 #!fsharp

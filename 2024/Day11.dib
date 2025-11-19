@@ -4,7 +4,7 @@
 
 #!fsharp
 
-#load "util.fsx"
+#load "../utils.fsx"
 open Utils
 let input = GetData 11
 let example = "0 1 10 99 999"

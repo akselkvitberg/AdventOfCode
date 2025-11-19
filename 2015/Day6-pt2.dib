@@ -1,9 +1,15 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
 #!fsharp
 
 open System.Text.RegularExpressions
 open System.IO
 
-let inputs = File.ReadAllLines "Inputs/6.txt"
+#load "../utils.fsx"
+open Utils
+let input = GetData 6 |> GetLines
 
 #!fsharp
 
@@ -52,7 +58,7 @@ let GetOperations line =
     let range = Range line
     range |> Seq.map (fun pos -> Apply pos func)
 
-let operations = inputs |> Seq.collect GetOperations
+let operations = input |> Seq.collect GetOperations
 
 let map = Map.empty<(int*int), int>
 operations |> Seq.fold apply map |> Map.values |> Seq.sum

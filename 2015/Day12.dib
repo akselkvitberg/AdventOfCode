@@ -1,3 +1,7 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
 #!fsharp
 
 #r "nuget: FSharp.Data, 5.0.2"
@@ -5,7 +9,9 @@ open FSharp.Data
 
 #!fsharp
 
-let json = File.ReadAllText "Inputs/12.txt"
+#load "../utils.fsx"
+open Utils
+let input = GetData 12
 
 #!fsharp
 

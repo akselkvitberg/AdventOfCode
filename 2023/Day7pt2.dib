@@ -8,7 +8,7 @@ I could not find a better way to handle both parts in one file
 
 #!fsharp
 
-#load "util.fsx"
+#load "../utils.fsx"
 open Utils
 
 let input = GetData 7

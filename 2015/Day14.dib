@@ -1,6 +1,12 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
 #!fsharp
 
-let inputs = File.ReadAllLines "Inputs/14.txt"
+#load "../utils.fsx"
+open Utils
+let input = GetData 14 |> GetLines
 
 #!fsharp
 
@@ -16,8 +22,8 @@ let Parse (line:string) =
     let rest = int seg[^1]
     Reindeer(name, speed, time, rest)
 
-Parse inputs[1]
-let reindeers = inputs |> Seq.map Parse |> Seq.toList
+Parse input[1]
+let reindeers = input |> Seq.map Parse |> Seq.toList
 
 #!fsharp
 

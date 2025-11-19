@@ -1,6 +1,12 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp"},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
 #!fsharp
 
-let input = [33;14;18;20;45;35;16;35;1;13;18;13;50;44;48;6;24;41;30;42]
+#load "../utils.fsx"
+open Utils
+let input = GetData 17 |> GetLines |> Seq.map int |> Seq.toList
 
 #!fsharp
 
