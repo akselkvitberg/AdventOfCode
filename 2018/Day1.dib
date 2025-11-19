@@ -1,0 +1,39 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp","languageName":"C#","aliases":["c#","cs"]},{"name":"fsharp","languageName":"fsharp"},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!fsharp
+
+#load "../utils.fsx"
+open Utils
+
+let input = GetData 1 |> GetLines |> Seq.map int
+input
+
+#!fsharp
+
+input |> Seq.sum
+
+#!fsharp
+
+open System.Collections.Generic
+
+let cycle items = 
+    seq {
+        while true do
+            yield! items
+    }
+
+let findFirstDuplicateInfiniteSeq seq =
+    let seen = HashSet<'T>()
+    seq
+    |> Seq.pick (fun x ->
+        if seen.Contains(x) then Some x
+        else
+            seen.Add(x) |> ignore
+            None
+    )
+
+cycle input
+|> Seq.scan (+) 0
+|> findFirstDuplicateInfiniteSeq
