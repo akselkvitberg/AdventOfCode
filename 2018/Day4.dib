@@ -1,0 +1,70 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp","languageName":"C#","aliases":["c#","cs"]},{"name":"fsharp","languageName":"fsharp"},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!fsharp
+
+#load "../utils.fsx"
+open Utils
+
+let input = GetData 4 |> GetLines |> Array.sort |> List.ofArray
+let example = GetExample 4 1 |> GetLines |> Array.sort |> List.ofArray
+example
+
+#!fsharp
+
+type Guard = { Id: string; Minutes: int list }
+type GuardSleepMap = { Id: string; SleepMap: (int * int) list }
+
+let rec parseGuardActivity (nights:Guard list) (guard:Guard) (lines: string list) =
+    match lines with
+    | Regex @"Guard #(\d+)" [ guardId ] :: rest -> 
+        parseGuardActivity (guard::nights) { Id = guardId; Minutes = [] } rest
+    | Regex @"(\d\d)\] falls asleep" [Int m1] :: (Regex @"(\d\d)\] wakes up" [Int m2]) :: rest -> 
+        let minutesAsleep = [m1 .. m2 - 1]
+        parseGuardActivity nights { guard with Minutes = guard.Minutes @ minutesAsleep } rest
+    | [] -> (guard::nights)
+    | line::xs -> failwithf "Unexpected line: %s" line
+
+
+let parseInput (lines: string list) =
+    lines
+    |> parseGuardActivity [] { Id = ""; Minutes = [] }
+    |> List.groupBy (fun g -> g.Id)
+    |> List.map (fun (guardId, guards) -> 
+        let sleepMap = guards |> List.collect (fun g -> g.Minutes) |> List.countBy id
+        { Id = guardId; SleepMap = sleepMap }
+    )
+    |> List.filter (fun gsm -> gsm.Id <> "")
+
+parseInput example
+
+#!fsharp
+
+let findGuardWithMostMinutesAsleep input =
+    parseInput input
+    |> List.maxBy (fun gsm -> gsm.SleepMap |> List.sumBy snd)
+    |> fun gsm -> 
+        let (minute, _) = gsm.SleepMap |> List.maxBy snd
+        (int gsm.Id) * minute
+
+findGuardWithMostMinutesAsleep example
+
+#!fsharp
+
+findGuardWithMostMinutesAsleep input
+
+#!fsharp
+
+let findGuardMostFrequentlyAsleepOnSameMinute input =
+    parseInput input
+    |> List.maxBy (fun gsm -> gsm.SleepMap |> List.maxBy snd |> snd)
+    |> fun gsm -> 
+        let (minute, _) = gsm.SleepMap |> List.maxBy snd
+        (int gsm.Id) * minute
+
+findGuardMostFrequentlyAsleepOnSameMinute example
+
+#!fsharp
+
+findGuardWithMostMinutesAsleep input
