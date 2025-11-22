@@ -1,0 +1,49 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp","languageName":"C#","aliases":["c#","cs"]},{"name":"fsharp","languageName":"fsharp"},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!fsharp
+
+#load "../utils.fsx"
+open Utils
+
+let input = GetData 5 |> Seq.toList
+let examples = [
+    "dabAcCaCBAcCcaDA"
+    "dabAaCBAcCcaDA"
+    "dabCBAcCcaDA"
+    "dabCBAcaDA"
+]
+input
+
+#!fsharp
+
+let rec react output input =
+    match input with
+    | x :: y :: rest when abs (int x - int y) = 32 ->
+        match output with
+        | prev :: output' -> react output' (prev :: rest)
+        | [] -> react output rest
+    | x :: rest -> react (x::output) rest
+    | [] -> output
+
+react [] input
+
+#!fsharp
+
+let getResultingLength input =
+    react [] (input |> Seq.toList) |> List.length
+
+getResultingLength input
+
+#!fsharp
+
+let getProblematicUnit input =
+    ['a' .. 'z']
+    |> List.map (fun c ->
+        input
+        |> List.filter (fun x -> Char.ToLower x <> c)
+        |> getResultingLength)
+    |> List.min
+
+getProblematicUnit input
