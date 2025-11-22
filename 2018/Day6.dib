@@ -1,0 +1,81 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp","languageName":"C#","aliases":["c#","cs"]},{"name":"fsharp","languageName":"fsharp"},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!fsharp
+
+#load "../utils.fsx"
+open Utils
+
+let input = GetData 6
+let example = GetExample 6 1
+example
+
+#!fsharp
+
+let parse = GetLines >> Array.map (Split "," >> fun [|Int x; Int y|] -> (x, y))
+parse example
+
+#!fsharp
+
+let manhattan (x1,y1) (x2,y2) =
+    abs (x1 - x2) + abs (y1 - y2)
+
+#!fsharp
+
+let getBounds (points: (int*int)[]) =
+    let xs = points |> Array.map fst
+    let ys = points |> Array.map snd
+    Array.min xs - 1, Array.min ys - 1, Array.max xs + 1, Array.max ys + 1
+
+let getClosestPoint p1 points =
+    points
+    |> Array.groupBy (manhattan p1)
+    |> Array.minBy fst
+    |> function
+        | _, [|i, _|] -> Some (p1,i)
+        | _ -> None
+
+let isInfiniteArea minX minY maxX maxY =
+    List.exists (fun (x,y) -> x = minX || x = maxX || y = minY || y = maxY)
+    
+let getDangerGrid input =
+    let points = parse input
+    let minX, minY, maxX, maxY = getBounds points
+    [
+        for x in minX .. maxX do
+        for y in minY .. maxY do
+        getClosestPoint (x,y) points
+    ]
+    |> List.choose id
+    |> List.groupBy snd
+    |> List.filter (fun (_, set) -> not (isInfiniteArea minX minY maxX maxY (set |> List.map fst)))
+    |> List.map (fun (_,v) -> v.Length)
+    |> List.max
+
+getDangerGrid example
+
+#!fsharp
+
+getDangerGrid input
+
+#!fsharp
+
+let getSafeRegion input threshold =
+    let points = parse input
+    let minX, minY, maxX, maxY = getBounds points
+    [
+        for x in minX .. maxX do
+        for y in minY .. maxY do
+            let totalDistance =
+                points
+                |> Array.sumBy (manhattan (x,y))
+            if totalDistance < threshold then
+                yield (x,y)
+    ]
+    |> List.length
+getSafeRegion example 32
+
+#!fsharp
+
+getSafeRegion input 10000
