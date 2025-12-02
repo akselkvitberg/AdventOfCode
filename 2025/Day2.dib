@@ -1,0 +1,59 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"name":"csharp","languageName":"C#","aliases":["c#","cs"]},{"name":"fsharp","languageName":"fsharp"},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!fsharp
+
+#load "../utils.fsx"
+open Utils
+let input = GetData 2
+let example = GetExample 2 1 |> fun x -> x.ReplaceLineEndings("") // example is split into lines for readability - remove line endings
+example
+
+#!fsharp
+
+let expand input =
+    input
+    |> Split ","
+    |> Array.collect (Split "-" >> Array.map int64 >> fun [| a; b |] -> [| for x in a .. b -> x |])
+
+expand example
+
+#!fsharp
+
+let isInvalidId number =
+    let str = string number
+    match str with
+    | Regex @"^(.+)\1$" [_] -> true
+    | _ -> false
+
+isInvalidId 1212
+
+#!fsharp
+
+let part1 = expand >> Array.filter isInvalidId >> Array.sum
+part1 example
+
+#!fsharp
+
+part1 input
+
+#!fsharp
+
+let isInvalidId2 number =
+    let str = string number
+    match str with
+    | Regex @"^(.+)\1+$" [_] -> true
+    | _ -> false
+
+
+isInvalidId2 824824824
+
+#!fsharp
+
+let part2 = expand >> Array.filter isInvalidId2 >> Array.sum
+part2 example
+
+#!fsharp
+
+part2 input
