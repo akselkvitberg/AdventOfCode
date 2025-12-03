@@ -76,6 +76,7 @@ let ToUpper (input: string) = input.ToUpper()
 
 /// Convert character to integer (0-9)
 let charToInt (c: char) = int c - int '0'
+let charToInt64 (c: char) = int64 c - int64 '0'
 
 /// Active pattern for regex matching that returns capture groups
 let (|Regex|_|) pattern input =
