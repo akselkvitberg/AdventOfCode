@@ -44,7 +44,7 @@ let getNeighbors (x,y) =
 let countNeighbors grid pos =
     pos
     |> getNeighbors
-    |> Set.intersect grid
+    |> fun u -> Set.intersect u grid // Observation - doing Set.intersect grid u is enormously slower than Set.intersect u grid due to the sizes of the sets
     |> Set.count
 
 #!fsharp
