@@ -1,0 +1,83 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"name":"csharp","languageName":"C#","aliases":["c#","cs"]},{"name":"fsharp","languageName":"fsharp"},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!fsharp
+
+#load "../utils.fsx"
+open Utils
+let input = GetData 4
+let example = GetExample 4 1
+example
+
+#!fsharp
+
+let parse input = 
+    input
+    |> GetLines
+    |> Seq.mapi (fun y line -> 
+        line 
+        |> Seq.mapi (fun x c -> ((x,y), c = '@'))
+        |> Seq.filter snd
+        |> Seq.map fst)
+    |> Seq.collect id
+    |> Set.ofSeq
+//parse example
+
+#!fsharp
+
+let getNeighbors (x,y) =
+    [ 
+        (x-1,y)
+        (x-1,y-1)
+        (x-1,y+1)
+        (x+1,y)
+        (x+1,y-1)
+        (x+1,y+1)
+        (x,y-1)
+        (x,y+1)
+    ]
+    |> Set.ofList
+
+#!fsharp
+
+let countNeighbors grid pos =
+    pos
+    |> getNeighbors
+    |> Set.intersect grid
+    |> Set.count
+
+#!fsharp
+
+let getAccessibleRolls input =
+    let grid = parse input
+    grid
+    |> Set.filter (fun pos -> countNeighbors grid pos < 4)
+    |> Set.count
+getAccessibleRolls example
+
+#!fsharp
+
+getAccessibleRolls input
+
+#!fsharp
+
+let getAccessible grid =
+    grid |> Set.filter (fun pos -> countNeighbors grid pos < 4)
+
+let countAllRemovableRolls input =
+    let grid = parse input
+    let rec loop currentGrid acc =
+        let accessible = getAccessible currentGrid
+        if Set.isEmpty accessible then
+            acc
+        else
+            let newGrid = Set.difference currentGrid accessible
+            loop newGrid (acc + Set.count accessible)
+    loop grid 0
+
+countAllRemovableRolls example
+
+#!fsharp
+
+countAllRemovableRolls input
