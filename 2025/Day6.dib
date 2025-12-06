@@ -1,0 +1,75 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"fsharp","items":[{"name":"csharp","languageName":"C#","aliases":["c#","cs"]},{"name":"fsharp","languageName":"fsharp"},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!fsharp
+
+#load "../utils.fsx"
+open Utils
+let input = GetData 6
+let example = GetExample 6 1
+example
+
+#!fsharp
+
+let parseOp = 
+    function
+    | "*" -> (*)
+    | "+" -> (+)
+
+let calculateColumn (items:string array) =
+    let variables = items.[0..^1] |> Array.map int64
+    let op = parseOp items.[^0]
+    Array.reduce (fun acc i -> op acc i) variables
+
+let part1 input =
+    input
+    |> GetLines
+    |> Array.map (Split " ")
+    |> Array.transpose
+    |> Array.map calculateColumn
+    |> Array.sum
+part1 example
+
+#!fsharp
+
+part1 input
+
+#!fsharp
+
+let split separator input =
+    let rec splitaux acc current = function
+        | [] -> List.rev ((List.rev current)::acc)
+        | x::xs when x = separator -> splitaux ((List.rev current)::acc) [] xs
+        | x::xs -> splitaux acc (x::current) xs
+    input
+    |> Array.toList
+    |> splitaux [] []
+    |> List.filter (fun l -> l <> [])
+    |> List.map List.toArray
+    |> List.toArray
+
+#!fsharp
+
+let mapChar = 
+    function
+    | ' ' -> None
+    | c -> Some (charToInt64 c)
+
+let part2 (input:string) =
+    let lines = input.Split("\n")
+    let operators = lines[^0] |> Split " " |> Array.map parseOp
+    lines[0..^1]
+    |> Array.map (Array.ofSeq)
+    |> Array.transpose
+    |> Array.map System.String
+    |> Array.map (fun x -> Int64.TryParse(x) |> function true, v -> Some v | _ -> None)
+    |> split None
+    |> Array.mapi (fun i values -> Array.choose id values |> Array.reduce(fun acc v -> operators[i] acc v ))
+    |> Array.sum
+
+part2 example
+
+#!fsharp
+
+part2 input
