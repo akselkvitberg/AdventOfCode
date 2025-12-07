@@ -160,3 +160,19 @@ let Matches pattern input =
         |> Seq.skip 1
         |> Seq.toList)
     |> Seq.toList
+
+/// Convert a string into a 2D array of ((x, y), char)
+let ToGrid (input: string) =
+    input
+    |> GetLines
+    |> Array.mapi (fun y line ->
+        line
+        |> Seq.mapi (fun x c -> ((x, y), c))
+        |> Seq.toArray)
+    |> Array.concat
+
+let toArray2D (input: string) =
+    let lines = GetLines input
+    let height = lines.Length
+    let width = lines.[0].Length
+    Array2D.init height width (fun y x -> lines.[y].[x])

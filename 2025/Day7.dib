@@ -1,0 +1,63 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp","languageName":"C#","aliases":["c#","cs"]},{"name":"fsharp","languageName":"fsharp"},{"name":"html","languageName":"HTML"},{"name":"http","languageName":"HTTP"},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"mermaid","languageName":"Mermaid"},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"value"}]}}
+
+#!fsharp
+
+#load "../utils.fsx"
+open Utils
+let input = GetData 7
+let example = GetExample 7 1
+example
+
+#!fsharp
+
+let part1 input = 
+    input
+    |> GetLines
+    |> Array.fold (fun (splits, beams: Set<int>) (line:string) -> 
+        line
+        |> Seq.indexed
+        |> Seq.fold (fun (splits, beams: Set<int>) (i,c) -> 
+            match c with
+            | 'S' -> 0, Set.singleton i
+            | '^' when Set.contains i beams -> splits+1, beams |> Set.add (i + 1) |> Set.add (i - 1) |> Set.remove i
+            | _ -> splits, beams
+            ) (splits, beams)
+    ) (0, Set.empty)
+    |> fst
+
+part1 example
+
+#!fsharp
+
+part1 input
+
+#!fsharp
+
+let part2 input = 
+    input
+    |> GetLines
+    |> Array.fold (fun (beams: Map<int, int64>) (line:string) -> 
+        line
+        |> Seq.indexed
+        |> Seq.fold (fun (beams: Map<int, int64>) (i,c) -> 
+            match c with
+            | 'S' -> Map.ofSeq [(i, 1L)]
+            | '^' when Map.containsKey i beams -> 
+                let beamsAtI = beams[i]
+                beams
+                |> Map.change (i - 1) (function Some v -> Some (v + beamsAtI) | None -> Some beamsAtI)
+                |> Map.change (i + 1) (function Some v -> Some (v + beamsAtI) | None -> Some beamsAtI)
+                |> Map.remove i
+            | _ -> beams
+            ) beams
+    ) Map.empty
+    |> Map.values
+    |> Seq.sum
+
+part2 example
+
+#!fsharp
+
+part2 input
