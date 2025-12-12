@@ -176,3 +176,34 @@ let toArray2D (input: string) =
     let height = lines.Length
     let width = lines.[0].Length
     Array2D.init height width (fun y x -> lines.[y].[x])
+
+let allPermutations list =
+    let rec permutations (input: 'a list) =
+        seq {
+            match input with
+            | [] -> yield [] // Base case: the only permutation of an empty list is an empty list
+            | head :: tail ->
+                // For each permutation of the tail
+                for tailPerm in permutations tail do
+                    // Insert the head into every possible position of the tail permutation
+                    for i in 0..List.length tailPerm do
+                        yield List.take i tailPerm @ [head] @ List.skip i tailPerm
+        }
+    list
+    |> Seq.toList
+    |> permutations
+
+let allCombinations list =
+    let rec combinations remaining =
+        seq {
+            match remaining with
+            | [] -> ()
+            | head :: tail ->
+                yield [head]
+                yield! combinations tail
+                for combo in combinations tail do
+                    yield head :: combo
+        }
+    list
+    |> Seq.toList
+    |> combinations
