@@ -1,0 +1,93 @@
+// Opened automatically by Polyglot Notebooks; needed when running as a plain script.
+open System
+open System.IO
+open System.Text
+
+// %%
+#load "../utils.fsx"
+open Utils
+
+let input = GetData 8
+
+// %%
+let example1 = GetExample 8 1
+let example2 = GetExample 8 2
+example1
+
+// %%
+type Direction = | R | L
+
+let parseNode = function Regex "(...) = \((...), (...)" [nodeId; left; right] -> nodeId, (left, right)
+
+let parse input = 
+    let [|instructions; nodes|] = input |> GetBlocks 
+
+    let instructions = instructions |> Seq.map (function | 'R' -> R | 'L' -> L) |> Seq.toArray
+    let nodes = nodes |> GetLines |> Array.map parseNode |> Map.ofArray
+
+    instructions, nodes
+
+parse example1
+
+// %%
+let repeatInstructions (instructions: Direction array) = 
+    Seq.initInfinite (fun i -> instructions[i % instructions.Length])
+
+repeatInstructions [|R;L;L;L;R|] |> Seq.take 10 |> Seq.toArray |> printfn "%A"
+
+// %%
+let getSteps instructions (nodes:Map<string, string*string>) startNode =
+    instructions
+    |> repeatInstructions
+    |> Seq.scan (fun agg i -> 
+        let (left, right) = nodes[agg] 
+        match i with
+        | L -> left
+        | R -> right
+    ) startNode
+
+let getInstructionCountFromTo from ``to`` input =
+    let instructions, nodes = parse input
+    getSteps instructions nodes from
+    |> Seq.takeWhile (fun x -> x <> ``to``)
+    |> Seq.truncate 1000000
+    |> Seq.length
+
+getInstructionCountFromTo "AAA" "ZZZ" example1
+
+// %%
+getInstructionCountFromTo "AAA" "ZZZ" input
+
+// %%
+let example3 = GetExample 8 3
+example3
+
+// %%
+let rec gcd (a:int64) (b:int64) =
+    if b = 0 then abs a
+    else gcd b (a % b)
+
+let lcm (a:int64) (b:int64) = (abs a * abs b) / gcd a b
+
+// %%
+let getAllStartNodes (nodes:Map<string, string*string>) =
+    nodes |> Map.keys |> Seq.where (fun id -> id.EndsWith("A"))
+
+let getPeriodOfStartingNode instructions nodes from =
+    getSteps instructions nodes from
+    |> Seq.takeWhile (fun x -> x.EndsWith("Z") |> not)
+    |> Seq.length
+
+let traverseAllNodesAtOnce input =
+    let instructions, nodes = parse input
+    let startNodes = getAllStartNodes nodes
+    
+    startNodes
+    |> Seq.map (getPeriodOfStartingNode instructions nodes)
+    |> Seq.map int64 // stupid large numbers
+    |> Seq.reduce lcm
+
+traverseAllNodesAtOnce example3
+
+// %%
+traverseAllNodesAtOnce input

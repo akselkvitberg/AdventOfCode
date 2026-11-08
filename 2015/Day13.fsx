@@ -1,0 +1,54 @@
+// Opened automatically by Polyglot Notebooks; needed when running as a plain script.
+open System
+open System.IO
+open System.Text
+
+// %%
+#load "../utils.fsx"
+open Utils
+let input = GetData 13 |> GetLines
+
+// %%
+let ParseLine (line:string) = 
+    let segments = line[..^1].Split(" ")
+    let personA = segments[0]
+    let personB = segments[^0]
+    let gain = if segments[2] = "gain" then 1 else -1
+    let happiness = int segments[3] * gain
+    ((personA, personB), happiness)
+
+ParseLine input[4]
+
+// %%
+let map = input |> Seq.map ParseLine |> Map
+let names = map |> Map.keys |> Seq.map fst |> Seq.distinct |> Seq.toList
+
+// %%
+let getHappiness map = map |> Map.map (fun (a,b) c -> c + map[(b,a)] )
+let happiness = getHappiness map
+
+// %%
+let rec insertions x = function
+    | []             -> [[x]]
+    | (y :: ys) as l -> (x::l)::(List.map (fun x -> y::x) (insertions x ys))
+
+let rec permutations = function
+    | []      -> seq [ [] ]
+    | x :: xs -> Seq.concat (Seq.map (insertions x) (permutations xs))
+
+let orderings = permutations names |> Seq.toList
+orderings |> Seq.take 4
+
+// %%
+let calculateCost (happiness:Map<(string*string), int>) (order: string list) =
+    let pairs = (order[0],order[^0])::(order |> List.pairwise)
+    let costs = pairs |> List.map (fun p -> happiness[p])
+    costs |> Seq.sum 
+
+orderings |> Seq.map (calculateCost happiness) |> Seq.max
+
+// %%
+let newMap = names |> Seq.collect (fun name -> [(name, "me"); ("me", name)]) |> Seq.fold (fun map value -> Map.add value 0 map) map
+let newHappiness = getHappiness newMap
+let newOrderings = permutations ("me"::names)
+newOrderings |> Seq.map (calculateCost newHappiness) |> Seq.max

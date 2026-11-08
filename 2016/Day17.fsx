@@ -1,0 +1,68 @@
+// Opened automatically by Polyglot Notebooks; needed when running as a plain script.
+open System.IO
+
+// %%
+#load "../utils.fsx"
+open Utils
+open System.Security.Cryptography
+open System
+open System.Text
+
+let input = GetData 17
+
+// %%
+type Move = U | D | L | R
+
+// %%
+let MD5 (input:string) = Convert.ToHexString(MD5.HashData(Encoding.ASCII.GetBytes(input))).ToLower()[..3] |> Seq.toArray
+
+// %%
+let rec getPossibleMoves (x,y) input (steps:string) = 
+    if (x,y) = (3,3) then seq{steps} else
+    let str = (MD5 $"{input}{steps}")
+    let openDoors = 
+        Array.mapi (fun i c -> (match i with 0 -> U | 1 -> D | 2 -> L | _ -> R) ,match c with 'b' | 'c' | 'd' | 'e' | 'f' -> true | _ -> false) str
+        |> Array.filter snd
+        |> Array.map fst
+        |> Set.ofArray
+
+    let possibleMoves =
+        match x,y with
+        | 0,0 -> [|D;R|]
+        | 0,3 -> [|U;R|]
+        | 0,_ -> [|U;D;R|]
+        | 3,0 -> [|D;L|]
+        | 3,3 -> [|U;L|]
+        | 3,_ -> [|U;D;L|]
+        | _,0 -> [|D;L;R|]
+        | _,3 -> [|U;L;R|]
+        | _,_ -> [|U;L;R;D|]
+        |> Set.ofArray
+
+    let moves = Set.intersect openDoors possibleMoves
+
+    seq {
+        for move in moves do
+            let newPos = match move with | U -> (x,y-1) | D -> (x, y+1) | L -> (x-1, y) | R -> (x+1, y)
+            yield! getPossibleMoves newPos input $"{steps}{move}"
+    }
+
+// %%
+[|
+    getPossibleMoves (0,0) "ihgpwlah" "" |> Seq.minBy (fun x -> x.Length) |> fun x -> (x, x.Length)
+    getPossibleMoves (0,0) "kglvqrro" "" |> Seq.minBy (fun x -> x.Length) |> fun x -> (x, x.Length)
+    getPossibleMoves (0,0) "ulqzkmiv" "" |> Seq.minBy (fun x -> x.Length) |> fun x -> (x, x.Length)
+|]
+
+// %%
+getPossibleMoves (0,0) input "" |> Seq.minBy (fun x -> x.Length) |> fun x -> x, x.Length
+
+// %%
+[|
+    getPossibleMoves (0,0) "ihgpwlah" "" |> Seq.maxBy (fun x -> x.Length) |> fun x -> (x, x.Length)
+    getPossibleMoves (0,0) "kglvqrro" "" |> Seq.maxBy (fun x -> x.Length) |> fun x -> (x, x.Length)
+    getPossibleMoves (0,0) "ulqzkmiv" "" |> Seq.maxBy (fun x -> x.Length) |> fun x -> (x, x.Length)
+|]
+
+// %%
+getPossibleMoves (0,0) input "" |> Seq.maxBy (fun x -> x.Length) |> fun x -> x, x.Length

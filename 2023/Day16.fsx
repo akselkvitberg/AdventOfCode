@@ -1,0 +1,114 @@
+// Opened automatically by Polyglot Notebooks; needed when running as a plain script.
+open System
+open System.IO
+open System.Text
+
+// %%
+#load "../utils.fsx"
+open Utils
+
+let input = GetData 16
+
+// %%
+let example = GetExample 16 1
+example
+
+// %%
+let parseGrid input =
+    input 
+    |> GetLines 
+    |> Array.map Seq.toArray
+    |> array2D
+
+parseGrid example
+
+// %%
+type Direction = Left | Right | Up | Down
+
+let propagateLight startPosition startDirection input =
+    let grid = input |> parseGrid
+    let bounds = grid.GetLength(0) // assume equal sides
+
+    let getNextPosition (x,y) direction =
+        let (x,y) = 
+            match direction with
+            | Left -> (x-1,y)
+            | Right -> (x+1,y)
+            | Up -> (x,y-1)
+            | Down -> (x,y+1)
+        if x < 0 || x >= bounds || y < 0 || y >= bounds then None 
+        else Some (x,y)
+
+    let rec step energizedTiles position direction =
+        let moveNext direction energizedTiles = 
+            match getNextPosition position direction with
+            | None -> energizedTiles
+            | Some pos -> step energizedTiles pos direction
+
+        if energizedTiles |> Set.contains (position, direction) then energizedTiles
+        else
+            let energizedTiles = Set.add (position, direction) energizedTiles
+
+            let (x,y) = position
+            //printfn "%i,%i : %c" x y (grid[y,x])
+            match grid[y,x], direction with 
+            | '|', Left
+            | '|', Right -> 
+                energizedTiles |> moveNext Up |> moveNext Down
+            | '-', Up
+            | '-', Down ->
+                energizedTiles |> moveNext Left |> moveNext Right
+            
+            | '/', Up -> moveNext Right energizedTiles
+            | '/', Down -> moveNext Left energizedTiles
+            | '/', Right -> moveNext Up energizedTiles
+            | '/', Left -> moveNext Down energizedTiles
+
+            | '\\', Up -> moveNext Left energizedTiles
+            | '\\', Down -> moveNext Right energizedTiles
+            | '\\', Right -> moveNext Down energizedTiles
+            | '\\', Left -> moveNext Up energizedTiles
+                
+            | _ -> moveNext direction energizedTiles
+
+    step Set.empty startPosition startDirection
+    |> Set.map fst
+
+let propagateLightFromTopLeft = propagateLight (0,0) Right
+
+propagateLightFromTopLeft example |> Seq.length
+
+// %%
+let drawUsed size tiles = 
+    [|
+        for y in 0..size do
+        [| 
+            for x in 0..size do
+            if tiles |> Seq.contains(x,y) then '#' else '.'
+        |] |> String
+    |]
+    |> String.concat "\n"
+    
+    
+
+drawUsed 9 (propagateLightFromTopLeft example)
+
+// %%
+propagateLightFromTopLeft input |> Seq.length
+
+// %%
+let part2 (input:string) =
+    let size = input.IndexOfAny([|'\r'; '\n'|]) - 1;
+
+    [
+        for x in 0..size do (x,0), Down
+        for x in 0..size do (x,size), Up
+        for y in 0..size do (0,y), Right
+        for y in 0..size do (size,y), Left
+    ]
+    |> List.map (fun (pos, direction) -> propagateLight pos direction input |> Seq.length)
+    |> List.max
+part2 example
+
+// %%
+part2 input

@@ -1,0 +1,98 @@
+// Opened automatically by Polyglot Notebooks; needed when running as a plain script.
+open System
+open System.IO
+open System.Text
+
+// %%
+#load "../utils.fsx"
+open Utils
+let input = GetData 6
+let example = GetExample 6 1
+example
+
+// %%
+type Vector = { x:int; y:int }
+
+let parse input =
+    let array = input |> GetLines
+    let guard = 
+        array
+        |> Array.indexed
+        |> Array.pick (fun (y,line) -> match line.IndexOf('^') with | -1 -> None | x -> Some { x = x; y = y })
+    
+    let obstacles = 
+        array
+        |> Array.indexed
+        |> Array.collect (fun (y,line) -> 
+            line.ToCharArray() |> Array.indexed |> Array.choose (fun (x,c) -> if c = '#' then Some { x = x; y = y } else None))
+        |> Set.ofArray
+    
+    let bounds = { x = array.[0].Length; y = array.Length }
+
+    guard, obstacles, bounds
+
+parse example
+
+// %%
+let turnRight direction =
+    match direction with 
+    | { x = 0; y = 1 } -> { x = -1; y = 0 }
+    | { x = -1; y = 0 } -> { x = 0; y = -1 }
+    | { x = 0; y = -1 } -> { x = 1; y = 0 }
+    | { x = 1; y = 0 } -> { x = 0; y = 1 }
+    | _ -> failwith "Invalid direction"
+
+let rec runPatrolInstructions position direction (obstacles:Set<Vector>) bounds =
+        [
+            yield position
+
+            let next = { x = position.x + direction.x; y = position.y + direction.y }
+            
+            if next.x < 0 || next.x >= bounds.x || next.y < 0 || next.y >= bounds.y then
+                ()
+            elif obstacles.Contains(next) then
+                yield! runPatrolInstructions position (turnRight direction) obstacles bounds
+            else    
+                yield! runPatrolInstructions next direction obstacles bounds
+        ]
+
+let part1 input =
+    let guard, obstacles, bounds = parse input
+
+    runPatrolInstructions guard { x = 0; y = -1 } obstacles bounds
+    |> Set.ofList
+    |> Set.count
+
+part1 example
+
+// %%
+part1 input
+
+// %%
+let part2 input =
+    let guard, obstacles, bounds = parse input
+
+    let rec checkLoop position direction (obstacles:Set<Vector>) (visited:Set<Vector*Vector>) =
+        
+        let nextVisited = visited.Add(position, direction)
+        let next = { x = position.x + direction.x; y = position.y + direction.y }
+
+        if visited.Contains(position, direction) 
+            then true
+        elif next.x < 0 || next.x >= bounds.x || next.y < 0 || next.y >= bounds.y 
+            then false
+        elif obstacles.Contains next then
+            checkLoop position (turnRight direction) obstacles nextVisited
+        else 
+            checkLoop next direction obstacles nextVisited
+    
+    runPatrolInstructions guard { x = 0; y = -1 } obstacles bounds
+    |> List.distinct
+    |> List.except [ guard ]
+    |> List.filter (fun obstaclePosition -> checkLoop guard { x = 0; y = -1 } (obstacles.Add(obstaclePosition)) Set.empty)
+    |> Seq.length
+
+part2 example
+
+// %%
+part2 input

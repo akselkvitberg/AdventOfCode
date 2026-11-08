@@ -1,0 +1,106 @@
+// Opened automatically by Polyglot Notebooks; needed when running as a plain script.
+open System
+open System.IO
+open System.Text
+
+// %%
+#load "../utils.fsx"
+open Utils
+let input = GetData 18
+let example = GetExample 18 1
+example[0..10]
+
+// %%
+let parse input = 
+    input
+    |> GetLines
+    |> Array.map (function Regex "(\d+),(\d+)" [Int x; Int y] -> x,y)
+
+parse input |> ignore
+
+// %%
+type Queue<'a> = 'a list * 'a list
+
+let emptyQueue = [],[]
+
+let enqueue item (queue:Queue<'a>) = 
+    match queue with 
+    | fs, bs -> item::fs, bs
+
+let rec dequeue queue =
+    match queue with
+    | [],[] -> None, ([],[])
+    | fs, [] -> dequeue ([],List.rev fs)
+    | fs, b::bs -> Some b, (fs, bs)
+
+emptyQueue |> enqueue (0,1) |> enqueue (2,3) |> dequeue
+
+// %%
+let getNeighbours (x,y) = 
+    [
+        (x+1, y)
+        (x-1, y)
+        (x, y+1)
+        (x, y-1)
+    ]
+
+// %%
+let bfs (dx,dy) walls =
+    let rec loop queue visited =
+        let item, queue = dequeue queue
+        match item with 
+        | None -> None
+        | Some (node,cost) when node = (dx,dy) -> Some cost
+        | Some (node,_) when Map.containsKey node visited -> loop queue visited
+        | Some (node,cost) -> 
+            let queue' = 
+                getNeighbours node
+                |> List.filter (fun n -> Set.contains n walls |> not)
+                |> List.filter (fun (x,y) -> x >= 0 && y >= 0 && x <= dx && y <= dy)
+                |> List.fold (fun acc i -> enqueue (i, (cost+1)) acc) queue
+            let visited' = Map.add node cost visited
+            loop queue' visited'
+    
+    loop (emptyQueue |> enqueue ((0,0), 0)) Map.empty
+
+bfs (6,6) Set.empty
+
+// %%
+let simulateFalling count set (bytes:(int*int) array) =
+    bytes[0..count-1]
+    |> Array.fold (fun acc pos -> acc |> Set.add pos) set
+
+let part1 destination count input =
+    input
+    |> parse
+    |> simulateFalling count Set.empty
+    |> bfs destination
+
+part1 (6,6) 12 example
+
+// %%
+part1 (70,70) 1024 input
+
+// %%
+let part2 destination input =
+    let data = parse input
+    
+    let rec binarySearch count nextStep =   
+        let path = 
+            simulateFalling count Set.empty data
+            |> bfs destination
+
+        if nextStep = 0 then 
+            if path.IsSome then data[count] else data[count+1]
+        else 
+            let nextCount = if path.IsSome then count + nextStep else count - nextStep
+            let nextStep = nextStep / 2
+            binarySearch nextCount nextStep
+    
+    binarySearch 0 (data.Length / 2)
+    |> fun (x,y) -> $"{x},{y}"
+
+part2 (6,6) example
+
+// %%
+part2 (70,70) input
