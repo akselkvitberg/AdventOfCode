@@ -41,7 +41,7 @@ let Parse (line:string) =
 Parse "turn on 10,10 through 12,12" (1,1) Map.empty<(int*int), bool>
 
 // %%
-let map = Map.empty<(int*int), bool>
+let map2 = Map.empty<(int*int), bool>
 let func = Parse "turn on"
 let range = Range "turn on 10,10, through 12,12"
 
@@ -49,7 +49,7 @@ let operations = range |> Seq.map func
 
 let apply map func = map |> func
 
-operations |> Seq.fold apply map
+operations |> Seq.fold apply map2
 
 // %%
 let GetOperations line =
@@ -57,7 +57,7 @@ let GetOperations line =
     let range = Range line
     range |> Seq.map func
 
-let operations = input |> Seq.collect GetOperations
+let operations2 = input |> Seq.collect GetOperations
 
-let map = Map.empty<(int*int), bool>
-operations |> Seq.fold apply map |> Map.filter (fun x y -> y) |> Map.count
+let map3 = Map.empty<(int*int), bool>
+operations2 |> Seq.fold apply map3 |> Map.filter (fun x y -> y) |> Map.count

@@ -33,13 +33,13 @@ let IsAuntMatch forensic (aunt:(string*int) array) =
     aunt 
     |> Seq.map forensic
     |> Seq.reduce (&&)
+    
+let ModernForensics (prop, count) = mfcsam[prop] = count
 
 let RunForensics forensicMethod aunts =
     (aunts |> Seq.indexed |> Seq.find (fun (i, aunt) -> IsAuntMatch ModernForensics aunt) |> fst ) + 1 //0 indexed
 
 // %%
-let ModernForensics (prop, count) = mfcsam[prop] = count
-
 aunts |> RunForensics ModernForensics
 
 // %%

@@ -1,4 +1,4 @@
-// Opened automatically by Polyglot Notebooks; needed when running as a plain script.
+ // Opened automatically by Polyglot Notebooks; needed when running as a plain script.
 open System
 open System.Text
 
@@ -52,7 +52,7 @@ let GetOperations line =
     let range = Range line
     range |> Seq.map (fun pos -> Apply pos func)
 
-let operations = input |> Seq.collect GetOperations
+let operations2 = input |> Seq.collect GetOperations
 
-let map = Map.empty<(int*int), int>
-operations |> Seq.fold apply map |> Map.values |> Seq.sum
+let map2 = Map.empty<(int*int), int>
+operations2 |> Seq.fold apply map2 |> Map.values |> Seq.sum

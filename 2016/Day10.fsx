@@ -76,7 +76,7 @@ let values = parseValues input
 processValues bots values
 
 // %%
-let rec processValues outputs (bots:Map<string,Bot>) (handovers: MicrochipHandover list) = 
+let rec processValues2 outputs (bots:Map<string,Bot>) (handovers: MicrochipHandover list) = 
     match handovers with 
     | (MicrochipHandover(botId, v))::xs when bots.ContainsKey(botId) ->
         let bot = { bots[botId] with Values = v::bots[botId].Values}
@@ -85,17 +85,17 @@ let rec processValues outputs (bots:Map<string,Bot>) (handovers: MicrochipHandov
             let newBots = Map.add botId {bot with Values = []} bots
             let handoverLow = MicrochipHandover (bot.BotLow, bot.Values |> Seq.min)
             let handoverHigh = MicrochipHandover (bot.BotHigh, bot.Values |> Seq.max)
-            processValues outputs newBots (handoverLow::handoverHigh::xs)
+            processValues2 outputs newBots (handoverLow::handoverHigh::xs)
         else
             let newBots = Map.add botId bot bots
-            processValues outputs newBots xs
+            processValues2 outputs newBots xs
     | (MicrochipHandover(botId, v))::xs -> 
-        processValues ((botId, v)::outputs) bots xs
+        processValues2 ((botId, v)::outputs) bots xs
     | [] -> outputs
 
-let bots = parseBots input
-let values = parseValues input
-let outputs = processValues [] bots values
+let bots2 = parseBots input
+let values2 = parseValues input
+let outputs = processValues2 [] bots2 values2
 outputs
 |> Seq.filter (fun (id, value) -> id = "output 0" || id = "output 1" || id = "output 2")
 |> Seq.map snd
