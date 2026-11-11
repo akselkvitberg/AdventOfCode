@@ -17,42 +17,38 @@ let private get (path: string) =
 
     let client = new HttpClient(handler)
     client.BaseAddress <- new Uri "https://adventofcode.com"
-    let result = client.GetStringAsync(path).GetAwaiter().GetResult()
-    result.Trim()
+    client.GetStringAsync(path).GetAwaiter().GetResult()
 
-let GetData (day: int) =
-    let directory = Path.Combine(__SOURCE_DIRECTORY__, string year, "Inputs")
-    let file: string = Path.Combine(directory, $"{day}.txt")
-
+/// Read a cached file, or download it once and cache it exactly as received
+let private readOrDownload (file: string) (download: unit -> string) =
     if File.Exists file then
         File.ReadAllText file
     else
-        let str = get $"/{year}/day/{day}/input"
-        Directory.CreateDirectory directory |> ignore
+        let str = download ()
+        Directory.CreateDirectory(Path.GetDirectoryName file) |> ignore
         File.WriteAllText(file, str)
         str
 
-let GetExample (day: int) (id: int) =
-    let directory = Path.Combine(__SOURCE_DIRECTORY__, string year, "Examples")
-    let file = Path.Combine(directory, $"{day}-{id}.txt")
+/// Puzzle input exactly as served, including leading whitespace and the trailing newline
+let GetRawData (day: int) =
+    let file = Path.Combine(__SOURCE_DIRECTORY__, string year, "Inputs", $"{day}.txt")
+    readOrDownload file (fun () -> get $"/{year}/day/{day}/input")
 
-    if File.Exists file then
-        File.ReadAllText file
-    else
+/// Puzzle input with leading and trailing whitespace trimmed
+let GetData (day: int) = (GetRawData day).Trim()
+
+/// Example block number `id` from the puzzle page, exactly as shown
+let GetRawExample (day: int) (id: int) =
+    let file = Path.Combine(__SOURCE_DIRECTORY__, string year, "Examples", $"{day}-{id}.txt")
+
+    readOrDownload file (fun () ->
         let html = get $"/{year}/day/{day}"
         let pattern = @"<pre><code>(.*?)</code></pre>"
         let matches = Regex.Matches(html, pattern, RegexOptions.Singleline)
+        WebUtility.HtmlDecode matches[id - 1].Groups[1].Value)
 
-        let exampleData =
-            matches
-            |> Seq.map (fun m -> m.Groups[1].Value)
-            |> Seq.toArray
-            |> fun a -> Array.get a (id - 1)
-
-        let decodedExampleData = WebUtility.HtmlDecode exampleData
-        Directory.CreateDirectory directory |> ignore
-        File.WriteAllText(file, decodedExampleData.Trim())
-        decodedExampleData
+/// Example block number `id` from the puzzle page, trimmed
+let GetExample (day: int) (id: int) = (GetRawExample day id).Trim()
 
 /// Split a string by a character, removing empty entries
 let Split (character: string) (input: string) =
@@ -61,6 +57,11 @@ let Split (character: string) (input: string) =
 /// Split input into lines, removing empty entries
 let GetLines (input: string) =
     input.Trim().Split([| "\n"; "\r\n" |], StringSplitOptions.RemoveEmptyEntries ||| StringSplitOptions.TrimEntries)
+
+/// Split input into lines exactly as they are: no trimming, empty lines kept.
+/// Only the trailing newline(s) at the end of the input are dropped.
+let GetRawLines (input: string) =
+    input.TrimEnd('\r', '\n').Split([| "\r\n"; "\n" |], StringSplitOptions.None)
 
 /// Split input into blocks separated by double newlines
 let GetBlocks (input: string) =
