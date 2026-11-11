@@ -1,0 +1,157 @@
+// Opened automatically by Polyglot Notebooks; needed when running as a plain script.
+open System
+open System.IO
+open System.Text
+
+// %%
+#load "../utils.fsx"
+open Utils
+
+let input = GetData 12
+input[0..3]
+
+// %%
+let example =
+    """
+    Sabqponm
+    abcryxxl
+    accszExk
+    acctuvwj
+    abdefghi
+    """.Replace(" ", "").Trim()
+
+example
+
+// %%
+let parseChar char =
+    match char with
+    | 'S' -> 0
+    | 'E' -> int 'z' - (int 'a')
+    | c -> int c - int 'a'
+
+let parseLine line = 
+    line
+    |> Seq.map parseChar
+    |> Seq.toArray
+
+parseLine "SabcdefE"
+
+// %%
+module Array2D =
+    let toArray (arr: 'T [,]) = arr |> Seq.cast<'T> |> Seq.toArray
+
+let parse input =
+    input
+    |> GetLines
+    |> Seq.map parseLine
+    |> Seq.toArray
+    |> array2D
+    |> Array2D.mapi (fun x y i -> ((x,y), i))
+    |> Array2D.toArray
+    |> Map.ofArray
+
+printfn "%A" (parse example)
+
+// %%
+let getCoordinateOf char (input:string) = 
+    input
+    |> GetLines
+    |> Seq.mapi (fun y v -> v |> Seq.mapi (fun x c -> (y,x),c))
+    |> Seq.collect id
+    |> Seq.find (fun (p, v) -> v = char)
+    |> fst
+
+let getEndpoint = getCoordinateOf 'E'
+let getStartpoint = getCoordinateOf 'S'
+
+example |> getEndpoint
+
+// %%
+example |> parse |> Map.find (2,5)
+
+// %%
+let findTraversableNeighbours terrain pos =
+    let add (a1, a2) (b1, b2) = 
+        a1 + b1, a2 + b2
+
+    match terrain |> Map.tryFind pos with 
+    | None -> []
+    | Some height -> 
+        [(0,1); (1,0); (0,-1); (-1,0)] 
+        |> Seq.map (add pos)
+        |> Seq.choose (fun p -> Map.tryFind p terrain |> Option.filter (fun v -> v >= height - 1) |> Option.map (fun _ -> p))
+        |> Seq.toList
+
+findTraversableNeighbours (example |> parse) (2,5)
+
+// %%
+let drawMap (map:Map<int*int,int>) =
+    let minX = map |> Map.keys |> Seq.minBy (fun (y,x) -> x) |> snd
+    let minY = map |> Map.keys |> Seq.minBy (fun (y,x) -> y) |> fst
+    let maxX = map |> Map.keys |> Seq.maxBy (fun (y,x) -> x) |> snd
+    let maxY = map |> Map.keys |> Seq.maxBy (fun (y,x) -> y) |> fst
+
+    let magnitude = ((map.Values |> Seq.max).ToString().Length)
+
+    [ for y in [minY..maxY] do
+        for x in [minX..maxX] do
+            yield Map.tryFind (y,x) map |> Option.defaultValue (int ((float magnitude) * 9.9999))
+    ]
+    |> Seq.chunkBySize (maxX+1)
+    |> Seq.toArray
+    |> Array.map (Array.map (fun i -> i.ToString(new string('0', magnitude))))
+    |> Array.map (fun x -> x |> String.concat " ")
+    |> String.concat "\n"
+
+//findDistanceMap (example |> parse) (example |> getEndpoints |> snd) |> drawMap
+
+// %%
+let findDistanceMap origin terrain =
+    let mutable count = 0
+
+    let rec propagateDistance distances positions = 
+        match positions with
+        | [] -> distances
+        | (pos, distance)::xs when Map.tryFind pos distances |> Option.exists (fun v -> v <= distance) -> 
+            count <- count + 1
+            propagateDistance distances xs
+        | (pos, distance)::xs ->
+            let newDistanceMap = Map.add pos distance distances
+            let newNeighbours = findTraversableNeighbours terrain pos |> List.map (fun p -> (p, distance + 1))
+            let neighborsToPropagate = newNeighbours |> Seq.filter (fun (pos, dist) -> newDistanceMap.ContainsKey(pos) |> not || newDistanceMap.TryFind(pos) |> Option.exists (fun v -> v > dist)) |> Seq.toList
+            propagateDistance newDistanceMap (neighborsToPropagate @ xs)
+
+    let map = propagateDistance Map.empty [(origin, 0)]
+    printf $"Unnessesary counts {count}"
+    map 
+
+findDistanceMap (example |> getEndpoint) (example |> parse)  |> drawMap
+
+// %%
+let findPathLength input = 
+    let endpoint = input |> getEndpoint
+    let startpoint = input |> getStartpoint
+    
+    input
+    |> parse
+    |> findDistanceMap endpoint
+    |> Map.find startpoint
+
+findPathLength example
+
+// %%
+findPathLength input
+
+// %%
+let findShortestPath input =
+    let endpoint = input |> getEndpoint
+    let terrain = input |> parse
+    let distanceField = terrain |> findDistanceMap endpoint
+
+    let zeroLevels = terrain |> Map.filter (fun k v -> v = 0) |> Map.keys
+    distanceField |> Map.filter (fun k v -> zeroLevels.Contains(k)) |> Map.values |> Seq.min
+
+findShortestPath example
+
+// %%
+findShortestPath input

@@ -1,0 +1,87 @@
+// Opened automatically by Polyglot Notebooks; needed when running as a plain script.
+open System
+open System.IO
+open System.Text
+
+// %%
+#load "../utils.fsx"
+open Utils
+
+let input = GetData 7 |> GetLines
+input[0..5]
+
+// %%
+let example = [|
+    "$ cd /"
+    "$ ls"
+    "dir a"
+    "14848514 b.txt"
+    "8504156 c.dat"
+    "dir d"
+    "$ cd a"
+    "$ ls"
+    "dir e"
+    "29116 f"
+    "2557 g"
+    "62596 h.lst"
+    "$ cd e"
+    "$ ls"
+    "584 i"
+    "$ cd .."
+    "$ cd .."
+    "$ cd d"
+    "$ ls"
+    "4060174 j"
+    "8033020 d.log"
+    "5626152 d.ext"
+    "7214296 k"
+|]
+
+// %%
+let rec propagateFileSize directories path size =
+    match path with
+    | [] -> directories
+    | _::xs ->
+        let directories' = Map.change path (fun v -> Some ((Option.defaultValue 0L v) + size)) directories
+        propagateFileSize directories' xs size
+
+let directories ((path:string list), (directories:Map<string list, int64>)) (line:string) =
+    match line |> Split " " with
+    | [| "$"; "cd"; ".." |] -> (path[1..], directories)
+    | [| "$"; "cd"; dest |] -> (dest::path, directories)
+    | [| Long size; _|] -> (path, propagateFileSize directories path size)
+    | _ -> (path, directories)
+
+example
+|> Seq.fold directories ([], Map.empty)
+|> snd
+|> Map.values
+|> Seq.filter (fun v -> v <= 100000)
+|> Seq.sum
+
+// %%
+let folderStructure = 
+    input
+    |> Seq.fold directories ([], Map.empty)
+    |> snd
+
+folderStructure
+    |> Map.values
+    |> Seq.filter (fun v -> v <= 100000)
+    |> Seq.sum
+
+// %%
+let totalSpace = 70000000L
+let requiredSpace = 30000000L
+
+// %%
+let usedSpace = folderStructure[["/"]]
+let freeSpace = totalSpace - usedSize
+let missingSpace = requiredSpace - freeSpace
+totalSpace, requiredSpace, usedSpace, freeSpace, missingSpace
+
+// %%
+folderStructure
+|> Map.values
+|> Seq.sort
+|> Seq.find (fun v -> v >= missingSpace)

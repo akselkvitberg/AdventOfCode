@@ -1,0 +1,61 @@
+// Opened automatically by Polyglot Notebooks; needed when running as a plain script.
+open System
+open System.IO
+open System.Text
+
+// %%
+#load "../utils.fsx"
+open Utils
+
+let input = GetData 3 |> GetLines
+let example = GetExample 3 2 |> GetLines
+example
+
+// %%
+let parse claim =
+    match claim with
+    | Regex @"#(\d+) @ (\d+),(\d+): (\d+)x(\d+)" [Int id; Int left; Int top; Int width; Int height] ->
+        (int id, int left, int top, int width, int height)
+
+example |> Array.map parse
+
+// %%
+let getArea claim =
+    let (id, left, top, width, height) = claim
+    [| for x in left .. left + width - 1 do
+        for y in top .. top + height - 1 do
+            yield (id, x, y) |]
+
+let getOverlappingAreas claims =
+    claims
+    |> Seq.map parse
+    |> Seq.collect getArea
+    |> Seq.countBy (fun (_, x,y) -> (x,y))
+    |> Seq.filter (fun (_, count) -> count > 1)
+    |> Seq.length
+
+getOverlappingAreas example
+
+// %%
+getOverlappingAreas input
+
+// %%
+let getNotOverlappingAreas claims =
+    let claims = claims |> Array.map parse
+    let ids = claims |> Array.map (fun (id, _, _, _, _) -> id) |> Set.ofArray
+    
+    let overlappingIds =
+        claims
+        |> Seq.collect getArea
+        |> Seq.groupBy (fun (_, x,y) -> (x,y))
+        |> Seq.filter (fun (_, group) -> Seq.length group > 1)
+        |> Seq.collect snd
+        |> Seq.map (fun (id, _, _) -> id)
+        |> Set.ofSeq
+    
+    Set.difference ids overlappingIds
+
+getNotOverlappingAreas example
+
+// %%
+getNotOverlappingAreas input

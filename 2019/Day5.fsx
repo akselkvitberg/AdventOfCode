@@ -1,0 +1,106 @@
+// Opened automatically by Polyglot Notebooks; needed when running as a plain script.
+open System
+open System.IO
+open System.Text
+
+// %%
+#load "../utils.fsx"
+open Utils
+
+let input = GetData 5
+input
+
+// %%
+type Operation = 
+| Add of int * int * int
+| Multiply of int * int * int
+| Store of int * int
+| Print of int
+| JumpIfTrue of int * int
+| JumpIfFalse of int * int
+| LessThan of int * int * int
+| Equals of int * int * int
+| Exit
+
+// %%
+let ExecuteOperation (program:int array) operation =
+    match operation with 
+    | Add(a,b,c) -> program[c] <- a + b
+    | Multiply(a,b,c) -> program[c] <- a * b
+    | Store(a, input) -> program[a] <- input
+    | Print(a) -> printfn "%i" a
+    | JumpIfTrue(_) -> ()
+    | JumpIfFalse(_) -> ()
+    | LessThan (a,b,c) -> program[c] <- if a < b then 1 else 0
+    | Equals (a,b,c) -> program[c] <- if a = b then 1 else 0
+    | Exit -> ()
+
+// %%
+let getNextCounter operation counter =
+    match operation with
+    | Add(_) -> counter + 4
+    | Multiply(_) -> counter + 4
+    | Store(_) -> counter + 2
+    | Print(_) -> counter + 2
+    | JumpIfTrue(a,b) -> if a <> 0 then b else counter + 3
+    | JumpIfFalse (a,b) -> if a = 0 then b else counter + 3
+    | LessThan(_) -> counter + 4
+    | Equals (_) -> counter + 4
+    | Exit -> 1
+
+// %%
+let GetOperation input (program:int array) counter = 
+        let getParameter id mode =
+            match mode with
+            | '0' -> (program[program[counter+id]])
+            | '1' -> (program[counter+id])
+            | _ -> failwith "Unknown parameter mode"
+
+        let (c,b,a,op) = 
+            match (program[counter] |> sprintf "%05i" |> Seq.toArray) with 
+            | [|a;b;c;d;e|] -> a, b, c, ($"{d}{e}" |> int)
+
+        match op with
+        | 1 -> Add      ((getParameter 1 a), (getParameter 2 b), (getParameter 3 '1'))
+        | 2 -> Multiply ((getParameter 1 a), (getParameter 2 b), (getParameter 3 '1'))
+        | 3 -> Store    ((getParameter 1 '1'), input)
+        | 4 -> Print     (getParameter 1 a)
+        | 5 -> JumpIfTrue ((getParameter 1 a), (getParameter 2 b))
+        | 6 -> JumpIfFalse ((getParameter 1 a), (getParameter 2 b))
+        | 7 -> LessThan ((getParameter 1 a), (getParameter 2 b), (getParameter 3 '1'))
+        | 8 -> Equals ((getParameter 1 a), (getParameter 2 b), (getParameter 3 '1'))
+        | 99 -> Exit
+        | _ -> failwith "unknown op code"
+
+// %%
+let Run input program =
+
+    let program = Array.copy program
+    let GetOperation = GetOperation input program
+
+    let rec RunStep counter =
+        let operation = GetOperation counter
+        match operation with
+        | Exit -> 
+            printfn $"done"
+            ()
+        | _ -> 
+            (ExecuteOperation program operation)
+            let nextCounter = getNextCounter operation counter
+            RunStep nextCounter
+
+    RunStep 0
+
+Run 4 [|1101;100;-1;0;4;0;3;0;4;0;99|]
+
+// %%
+input 
+|> Split "," 
+|> Array.map (int)
+|> Run 1
+
+// %%
+input 
+|> Split "," 
+|> Array.map (int)
+|> Run 5

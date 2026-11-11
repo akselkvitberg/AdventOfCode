@@ -1,0 +1,67 @@
+// Opened automatically by Polyglot Notebooks; needed when running as a plain script.
+open System
+open System.IO
+open System.Text
+
+// %%
+#load "../utils.fsx"
+open Utils
+
+let input = GetData 20 |> GetLines
+input[..4]
+
+// %%
+let parse = function | Regex "(\d+)-(\d+)" [UInt start; UInt stop] -> start,stop
+
+parse "12345-67890"
+
+// %%
+input
+|> Seq.map parse
+|> Seq.sortBy fst
+|> Seq.skip 5
+|> Seq.take 10
+
+// %%
+let rec findFirstIpNotBlocked ipToCheck list = 
+    let range = list |> List.tryFind (fun (f,t) -> f <= ipToCheck && t >= ipToCheck)
+    match range with
+    | None -> Some ipToCheck
+    | Some (f,t) when t = UInt32.MaxValue -> None
+    | Some (f,t) -> findFirstIpNotBlocked (t + 1u) list
+
+input
+|> Seq.map parse
+|> Seq.sortBy fst
+|> Seq.toList
+|> findFirstIpNotBlocked 0u
+
+// %%
+UInt32.MaxValue
+
+// #### part 2
+// %%
+let rec findLastIpNotBlocked (ipToCheck:UInt32) (list:(UInt32*UInt32) list) =
+    list
+    |> List.tryFind (fun (f,_) -> f >= ipToCheck) 
+    |> Option.map (fst)
+
+let rec findRangeNotBlocked ipToCheck list =
+    let firstIpNotBlocked = findFirstIpNotBlocked ipToCheck list
+    let lastIpBlocked = Option.bind (fun ip -> findLastIpNotBlocked ip list) firstIpNotBlocked
+    
+    seq{
+        match firstIpNotBlocked, lastIpBlocked with 
+        | Some a, Some b -> 
+            yield (b - a) |> uint64
+            yield! findRangeNotBlocked (b) list
+        | _, _ -> ()
+    }
+    
+
+input
+|> Seq.map parse
+|> Seq.sortBy fst
+|> Seq.toList
+|> findRangeNotBlocked 0u
+|> Seq.sum

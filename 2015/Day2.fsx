@@ -1,0 +1,42 @@
+// Opened automatically by Polyglot Notebooks; needed when running as a plain script.
+open System
+open System.IO
+open System.Text
+
+// %%
+#load "../utils.fsx"
+open Utils
+let input = GetData 2 |> GetLines
+input[0..5]
+
+// %%
+type Size = { W:int; H:int; L:int }
+
+let AsSize (line:int[]) = {W = line[0]; H = line[1]; L= line[2]}
+let Convert (line:string) = 
+    line.Split 'x' 
+    |> Seq.map int 
+    |> Seq.toArray 
+    |> AsSize
+
+// %%
+let Area size = 
+    let lengths = [| size.W * size.H; size.W * size.L; size.H * size.L |]
+    let sides = Seq.sum lengths
+    sides * 2 + Seq.min lengths
+
+// %%
+input |> Seq.sumBy (Convert >> Area)
+
+// %%
+let Ribbon size = 
+    let lengths = [| size.W; size.L; size.H |]
+    let permieter = 2 * (Seq.sum lengths - Seq.max lengths)
+    let bow = size.W * size.H * size.L
+    permieter + bow
+
+Ribbon {W=2;H=3;L=4}
+
+// %%
+input
+|> Seq.sumBy (Convert >> Ribbon)

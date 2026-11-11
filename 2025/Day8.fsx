@@ -1,0 +1,97 @@
+// Opened automatically by Polyglot Notebooks; needed when running as a plain script.
+open System
+open System.IO
+open System.Text
+
+// %%
+#load "../utils.fsx"
+open Utils
+let input = GetData 8
+let example = GetExample 8 1
+example
+
+// %%
+type Point3D = int64 * int64 * int64
+let parse input =
+    input
+    |> GetLines
+    |> Array.map (fun line -> line |> Split "," |> Array.map int64 |> fun [|x;y;z|] -> (x,y,z))
+
+// %%
+let getEuclideanDistance (x1:int64,y1:int64,z1:int64) (x2:int64,y2:int64,z2:int64) =
+    let dx = x2 - x1 |> abs
+    let dy = y2 - y1 |> abs
+    let dz = z2 - z1 |> abs
+    (dx * dx + dy * dy + dz * dz)
+    |> double
+    |> sqrt
+
+// %%
+let getAllDistances (points: Point3D array) =
+    [|
+        for i in 0 .. points.Length - 2 do
+            for j in i + 1 .. points.Length - 1 do
+                yield i, j, getEuclideanDistance points[i] points[j]
+    |]
+    |> Array.sortBy (fun (_,_,d) -> d)
+    |> Array.map (fun (i,j,_) -> i,j)
+
+// parse example
+// |> getAllDistances
+
+// %%
+let combineCircuits (circuits:Set<int> array) (i, j) =
+    let iSet = Array.find (fun s -> Set.contains i s) circuits
+    let jSet = Array.find (fun s -> Set.contains j s) circuits
+
+    if iSet = jSet then
+        circuits
+    else
+        let newSet = Set.union iSet jSet
+        circuits
+        |> Array.except [|iSet; jSet|]
+        |> Array.append [|newSet|]
+
+let part1 maxItems input =
+    let points = parse input
+    let initialCircuits = [| 0.. (Array.length points - 1) |] |> Array.map Set.singleton
+
+    let distances = getAllDistances points |> Array.truncate maxItems
+    Array.fold combineCircuits initialCircuits distances
+    |> Array.map Set.count
+    |> Array.sortDescending
+    |> Array.truncate 3
+    |> Array.reduce (*)
+
+part1 10 example
+
+// %%
+part1 1000 input
+
+// %%
+let combineCircuits2 (circuits:Set<int> array) (i, j) =
+    let iSet = Array.find (fun s -> Set.contains i s) circuits
+    let jSet = Array.find (fun s -> Set.contains j s) circuits
+
+    if iSet = jSet then
+        circuits
+    else
+        let newSet = Set.union iSet jSet
+        circuits
+        |> Array.except [|iSet; jSet|]
+        |> Array.append [|newSet|]
+
+let part2 input =
+    let points = parse input
+    let initialCircuits = [| 0.. (Array.length points - 1) |] |> Array.map Set.singleton
+
+    let distances = getAllDistances points
+    Seq.scan combineCircuits2 initialCircuits distances
+    |> Seq.tryFindIndex (fun c -> Array.length c = 1)
+    |> Option.map (fun i -> distances[i-1] |> fun (j,k) -> points[j], points[k])
+    |> Option.map (fun ((x1,_,_),(x2,_,_)) -> x1 * x2)
+
+part2 example
+
+// %%
+part2 input

@@ -1,0 +1,74 @@
+// Opened automatically by Polyglot Notebooks; needed when running as a plain script.
+open System
+open System.IO
+open System.Text
+
+// %%
+#load "../utils.fsx"
+open Utils
+
+let input = GetData 17
+input
+
+// %%
+type Direction = Left | Right | Down
+
+let Parse line = 
+    line
+    |> Seq.map (function | '<' -> Left | _ -> Right)
+    |> Seq.toArray
+
+let gusts = ">>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>" |> Parse
+
+// %%
+let rocks = [ [(2,0);(3,0);(4,0);(5,0)]
+              [(3,0);(2,1);(3,1);(4,1);(3,2)]
+              [(4,0);(4,1);(4,2);(2,0);(3,0)]
+              [(2,0);(2,1);(2,2);(2,3)]
+              [(2,0);(3,0);(2,1);(3,1)] ]
+              |> List.map Set
+
+let floor = [(0,0);(1,0);(2,0);(3,0);(4,0);(5,0);(6,0)] |> Set
+
+// %%
+let rec moveInDirection rock direction =
+    let (dx, dy) = match direction with | Left -> (-1,0) | Right -> (1,0) | Down ->  (0, -1)
+    rock |> Set.map (fun (x,y) -> x + dx, y + dy)
+    
+moveInDirection rocks[0] Down
+
+// %%
+let isBlocked world rock = Set.exists (fun (x,_) -> x = -1 || x = 7) rock || Set.intersect rock world |> Set.isEmpty |> not
+let settle world rock = Set.union rock world
+
+// %%
+let rec Fall world rock gustIndex =
+    let rock' = moveInDirection rock Down
+    if isBlocked world rock'
+    then settle world rock, gustIndex
+    else
+        let gust = gusts[gustIndex % gusts.Length]
+        let rock'' = moveInDirection rock' gust
+        if isBlocked world rock''
+        then Fall world rock' (gustIndex + 1)
+        else Fall world rock'' (gustIndex + 1)
+
+Fall floor (rocks[0] |> Set.map (fun (x,y) -> x, 3)) 0
+
+// %%
+let DropRock (world, gustIndex) index = 
+    let maxY = world |> Seq.maxBy snd |> snd
+    let rock = rocks[index % rocks.Length] |> Set.map (fun (x,y) -> x, y + maxY + 4)
+
+    Fall world rock gustIndex
+
+let Simulate count =
+    [0..count-1]
+    |> Seq.fold DropRock (floor, 0)
+    |> fst
+
+Simulate 10
+
+// %%
+Simulate 2022
+|> Seq.maxBy snd

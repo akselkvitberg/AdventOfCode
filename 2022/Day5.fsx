@@ -1,0 +1,105 @@
+// Opened automatically by Polyglot Notebooks; needed when running as a plain script.
+open System
+open System.IO
+open System.Text
+
+// %%
+#load "../utils.fsx"
+open Utils
+
+let input = GetData 5 |> Split "\n\n"
+let crateInput = input[0]
+let instructionInputs = input[1]
+crateInput
+
+// %%
+type Instruction = {From:int;To:int; Count: int}
+
+// %%
+let parseInstructions9000 input =
+    match input with
+    | Regex "move (\d+) from (\d) to (\d)" [Int count; Int source; Int target] -> [1..count] |> Seq.map (fun _ -> {From = source; To = target; Count = 1})
+
+let exampleInstructions = 
+    "move 1 from 2 to 1
+    move 3 from 1 to 3
+    move 2 from 2 to 1
+    move 1 from 1 to 2"
+    |> GetLines
+    |> Seq.collect parseInstructions9000
+exampleInstructions
+
+// %%
+let transpose arr =
+    arr
+    |> Seq.collect Seq.indexed 
+    |> Seq.groupBy fst 
+    |> Seq.map (snd >> Seq.map snd);;
+
+// %%
+let parseCrates crateInput =
+    crateInput
+    |> RegexReplace @"[\[ ](.)[\] ] ?" "$1"
+    |> GetLines
+    |> fun a -> Array.take (a.Length - 1) a
+    |> Seq.map (fun x -> x.ToCharArray())
+    |> transpose
+    |> Seq.map (Seq.filter (fun c -> c <> ' '))
+    |> Seq.map Seq.toList
+    |> Seq.mapi (fun i item -> i+1, item)
+    |> Map.ofSeq
+
+let exampleCrates =
+    "    [D]    
+[N] [C]    
+[Z] [M] [P]
+ 1   2   3 "
+    |> parseCrates
+exampleCrates
+
+// %%
+let move (map:Map<int, char list>) instruction =
+    let toMove = List.append (map[instruction.From][..(instruction.Count-1)]) map[instruction.To]
+    let remaining = map[instruction.From][instruction.Count..]
+    map
+    |> Map.add instruction.From remaining
+    |> Map.add instruction.To toMove
+
+
+move exampleCrates {From = 2; To = 1; Count = 0}
+
+// %%
+let processInstructions map instructions =
+    instructions
+    |> Seq.fold move map
+    |> Map.values
+    |> Seq.map Seq.head 
+    |> Seq.toArray
+    |> String
+
+processInstructions exampleCrates exampleInstructions
+
+// %%
+let instructions =
+    instructionInputs
+    |> GetLines
+    |> Seq.collect parseInstructions9000
+
+let crates =
+    crateInput
+    |> parseCrates
+
+processInstructions crates instructions
+
+// %%
+let parseInstructions9001 input =
+    match input with
+    | Regex "move (\d+) from (\d) to (\d)" [Int count; Int source; Int target] -> {From = source; To = target; Count = count}
+
+// %%
+let instructions2 =
+    instructionInputs
+    |> GetLines
+    |> Seq.map parseInstructions9001
+
+processInstructions crates instructions2

@@ -12,3 +12,11 @@ token
 Input/
 Inputs/
 Examples/
+
+# JetBrains (Rider)
+.idea/
+*.iml
+*.ipr
+*.iws
+*.sln.iml
+.idea.*/
