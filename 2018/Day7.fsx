@@ -55,7 +55,7 @@ getStepOrder example
 getStepOrder input
 
 // %%
-type Worker = { Step: string option; CompletedTime: int }
+type Worker = { Step: string; CompletedTime: int }
 
 let getConcurrentStepOrder input workerCount baseDuration =
     let requirements = Array.map parse input |> Array.toList
@@ -79,114 +79,29 @@ let getConcurrentStepOrder input workerCount baseDuration =
 
     let getDuration (step:string) = baseDuration + (int step.[0] - int 'A' + 1)
 
-    let rec processSteps workers completed inProgress time =
-        // steps:
-        // are we done?
+    let rec processSteps workers completed time =
+        // free the workers that are done, and mark their steps as completed
+        let finished, busy = workers |> List.partition (fun w -> w.CompletedTime <= time)
+        let completed = completed @ (finished |> List.map (fun w -> w.Step))
+
         if List.length completed = List.length nodes then
             time
         else
-            // 1. get next steps to take
-            let availableSteps = getNextToProcess completed inProgress
+            // give available steps to the free workers
+            let inProgress = busy |> List.map (fun w -> w.Step)
+            let started =
+                getNextToProcess completed inProgress
+                |> List.truncate (workerCount - busy.Length)
+                |> List.map (fun step -> { Step = step; CompletedTime = time + getDuration step })
 
-            // 3. detect completed steps and free workers
-            let (freeWorkers, buzyWorkers) =
-                workers
-                |> List.partition (fun w -> w.CompletedTime <= time)
-            let newCompletedSteps = freeWorkers |> List.choose (fun w -> w.Step)
+            // jump to the next time a worker finishes
+            let workers = busy @ started
+            let nextTime = workers |> List.map (fun w -> w.CompletedTime) |> List.min
+            processSteps workers completed nextTime
 
-            // 4. assign new steps to free workers
-            let newAssignments, remainingSteps =
-                availableSteps
-                |> List.splitAt (List.length freeWorkers)
-            
+    processSteps [] [] 0
 
-
-
-            // 5. increment global time
-
-            0
-
-    processSteps [] [] [] 0
-
-getConcurrentStepOrder example 2 60
+getConcurrentStepOrder example 2 0
 
 // %%
-open System
-open System.Collections.Generic
-
-let lines = 
-    GetData 7
-    |> GetLines
-    |> Seq.map (fun line -> line.Split(" "))
-    |> Seq.map (fun l -> (l.[1], l.[7]))
-    |> Seq.toList
-
-let steps = 
-    lines 
-    |> List.collect (fun (a, b) -> [a; b])
-    |> Set.ofList
-
-let time (c:string) = 60 + int c.[0] - int 'A'
-
-let nextStep steps lines =
-    steps
-    |> Set.filter (fun s -> lines |> List.forall (fun (_, b) -> b <> s))
-    |> Set.toList
-
-// Initialize the time counter to track the total elapsed time
-let mutable t = 0
-
-// Create an array to represent the workers and their remaining work time
-// Each worker starts with 0 remaining time
-let mutable workers = Array.replicate 5 0
-
-// Create an array to represent the current work assigned to each worker
-// Each worker starts with no assigned work (None)
-let mutable work = [| for _ in 1..5 -> None : string option |]
-
-// Initialize the set of remaining steps to process
-let mutable remainingSteps = steps
-
-// Initialize the list of remaining dependencies between steps
-let mutable remainingLines = lines
-
-// Continue processing until all steps are completed and no workers are busy
-while not (Set.isEmpty remainingSteps) || workers |> Array.exists ((<) 0) do
-    // Get the next steps that can be processed, sorted in descending order
-    let mutable cand = nextStep remainingSteps remainingLines |> List.sortDescending
-
-    // Iterate over each worker to update their state
-    for i in 0..4 do
-        // Decrease the remaining work time for the worker, ensuring it doesn't go below 0
-        workers.[i] <- max (workers.[i] - 1) 0
-
-        // If the worker has finished their current task
-        if workers.[i] = 0 then
-            match work.[i] with
-            | Some step ->
-                // Remove the completed step from the remaining dependencies
-                remainingLines <- remainingLines |> List.filter (fun (a, _) -> a <> step)
-                // Mark the worker as having no assigned work
-                work.[i] <- None
-            | None -> ()
-
-            // If there are candidate steps to process, assign one to the worker
-            if cand.Length > 0 then
-                let n = cand.Head // Select the next step
-                cand <- cand.Tail // Remove it from the candidate list
-                workers.[i] <- time n // Assign the step's duration to the worker
-                work.[i] <- Some n // Assign the step to the worker
-                remainingSteps <- remainingSteps |> Set.remove n // Remove the step from remaining steps
-
-    // Increment the time counter after each iteration
-    t <- t + 1
-
-let foo workers work remainingSteps remainingLines =
-    // steps:
-    // 1. get next steps to take
-    // 2. decrement worker times
-    // 3. detect completed steps and free workers
-    // 4. assign new steps to free workers
-    // 5. increment global time
-
-printfn "%d" t
+getConcurrentStepOrder input 5 60
