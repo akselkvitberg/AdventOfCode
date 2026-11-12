@@ -172,6 +172,10 @@ let ToGrid (input: string) =
         |> Seq.toArray)
     |> Array.concat
 
+/// Set of (x, y) positions where the input has the given character
+let PositionsOf (c: char) (input: string) =
+    set [ for pos, ch in ToGrid input do if ch = c then pos ]
+
 let toArray2D (input: string) =
     let lines = GetLines input
     let height = lines.Length
