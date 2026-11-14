@@ -165,7 +165,7 @@ let Matches pattern input =
 /// Convert a string into a 2D array of ((x, y), char)
 let ToGrid (input: string) =
     input
-    |> GetLines
+    |> GetRawLines
     |> Array.mapi (fun y line ->
         line
         |> Seq.mapi (fun x c -> ((x, y), c))
