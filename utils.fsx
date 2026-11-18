@@ -173,8 +173,12 @@ let ToGrid (input: string) =
     |> Array.concat
 
 /// Set of (x, y) positions where the input has the given character
+let filterGrid (c:char) (grid: ((int * int) * char) array) =
+    set [ for pos, ch in grid do if ch = c then pos ]
+
 let PositionsOf (c: char) (input: string) =
-    set [ for pos, ch in ToGrid input do if ch = c then pos ]
+    ToGrid input |> filterGrid c
+
 
 let toArray2D (input: string) =
     let lines = GetLines input
