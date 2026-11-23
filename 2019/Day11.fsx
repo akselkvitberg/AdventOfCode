@@ -8,13 +8,13 @@ input
 
 // %%
 
-type Vec2d = int * int
+type Vec2 = int * int
 
 type State = {
     Machine: Machine
-    Position: Vec2d
-    Direction: Vec2d
-    Panels: Map<Vec2d, int64>
+    Position: Vec2
+    Direction: Vec2
+    Panels: Map<Vec2, int64>
 }
 
 let turnLeft  (dx, dy) = (dy, -dx)
@@ -50,7 +50,7 @@ let part1 input =
 part1 input
 
 // %%
-let render (panels: Map<Vec2d, int64>) =
+let render (panels: Map<Vec2, int64>) =
     let white = panels |> Map.filter (fun _ colour -> colour = 1L) |> Map.keys |> Seq.toList
     let xs = white |> List.map fst
     let ys = white |> List.map snd
