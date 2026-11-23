@@ -1,17 +1,8 @@
-// Opened automatically by Polyglot Notebooks; needed when running as a plain script.
-open System
-open System.IO
-open System.Text
-
-// %%
 #load "../utils.fsx"
+open System
 open Utils
 
 let input = GetData 10
-
-// %%
-#r "nuget: FSharpPlus"
-open FSharpPlus
 
 // %%
 let example = """
@@ -42,15 +33,14 @@ let getAstroidLocations data =
 getAstroidLocations example
 
 // %%
-open FSharpPlus.Math.Generic
+let rec gcd a b = if b = 0 then abs a else gcd b (a % b)
 
-// %%
 let getAstroidsInView (pX, pY) astroids = 
     astroids
     |> Array.filter (fun (x,y) -> x <> pX || y <> pY)
     |> Array.map (fun (x,y) -> (pX - x), (pY - y))
     |> Array.map (fun (x,y) -> x / gcd x y, y / gcd x y)
-    |> Array.countBy id
+    |> Array.distinct
 
 example
 |> getAstroidLocations
@@ -76,6 +66,6 @@ getBestLocation input
 // PART 2
 // %%
 let getAngleOfAstroid (px,py) (ax,ay) =
-    Math.Sinh ((ax-px) / (ay-py))
+    Math.Sinh (float (ax-px) / float (ay-py))
 
 getAngleOfAstroid (0,0) (1,0)

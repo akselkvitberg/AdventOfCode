@@ -1,9 +1,3 @@
-// Opened automatically by Polyglot Notebooks; needed when running as a plain script.
-open System
-open System.IO
-open System.Text
-
-// %%
 #load "../utils.fsx"
 open Utils
 

@@ -1,10 +1,5 @@
-// Opened automatically by Polyglot Notebooks; needed when running as a plain script.
-open System
-open System.IO
-open System.Text
-
-// %%
 #load "../utils.fsx"
+open System
 open Utils
 
 let input = GetData 8 |> Seq.map (string >> int) |> Seq.toArray
@@ -16,9 +11,8 @@ let layerSize = 25*6
 input
 |> Seq.chunkBySize (layerSize)
 |> Seq.map (Array.countBy id >> Map.ofSeq)
-|> Seq.sortBy (fun c -> c[0])
-|> Seq.map (fun d -> d[1] * d[2])
-|> Seq.head
+|> Seq.minBy (fun c -> c[0])
+|> fun d -> d[1] * d[2]
 
 // %%
 let layers = 
