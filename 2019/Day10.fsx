@@ -65,7 +65,37 @@ getBestLocation input
 
 // PART 2
 // %%
-let getAngleOfAstroid (px,py) (ax,ay) =
-    Math.Sinh (float (ax-px) / float (ay-py))
+/// Clockwise - up = 0
+let angle (sX, sY) (x, y) =
+    let a = Math.Atan2(float (x - sX), float (sY - y))
+    if a < 0.0 then a + 2.0 * Math.PI else a
 
-getAngleOfAstroid (0,0) (1,0)
+let direction (sX, sY) (x, y) =
+    let dx, dy = x - sX, y - sY
+    let d = gcd dx dy
+    dx / d, dy / d
+
+let distance (sX, sY) (x, y) = abs (x - sX) + abs (y - sY)
+
+let vaporizationOrder station astroids =
+    astroids
+    |> Array.filter (fun a -> a <> station)
+    |> Array.groupBy (direction station)
+    |> Array.collect (fun (_, group) ->
+        group
+        |> Array.sortBy (distance station)
+        |> Array.mapi (fun turn a -> (turn, angle station a), a))
+    |> Array.sortBy fst
+    |> Array.map snd
+
+let part2 input =
+    let astroids = getAstroidLocations input
+    let _, station = getBestLocation input
+    let x, y = (vaporizationOrder station astroids)[199]
+    x * 100 + y
+
+// expected 802
+part2 (GetExample 10 7)
+
+// %%
+part2 input
